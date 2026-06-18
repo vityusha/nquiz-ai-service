@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for TokenAdminController.
  * Tests token creation, management, and top-up operations.
  */
-@MicronautTest
+@MicronautTest(transactional = false)
 @DisplayName("TokenAdminController Integration Tests")
 class TokenAdminControllerTest {
 

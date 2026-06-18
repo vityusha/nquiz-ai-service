@@ -17,9 +17,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @Singleton
 public class LlmClientFactory {
 
-    @Value("${llm.timeweb.url}") String timewebUrl;
-    @Value("${llm.timeweb.model}") String timewebModel;
-
     @Value("${llm.groq.url}") String groqUrl;
     @Value("${llm.groq.model}") String groqModel;
 
@@ -37,7 +34,6 @@ public class LlmClientFactory {
 
     public LlmConfig getConfig(Provider provider) {
         return switch (provider) {
-            case TIMEWEB -> new LlmConfig(timewebUrl, timewebModel, System.getenv("TIMEWEB_ACCESS_ID"), System.getenv("TIMEWEB_API_KEY"));
             case GROQ -> new LlmConfig(groqUrl, groqModel, System.getenv("GROK_ACCESS_ID"), System.getenv("GROQ_API_KEY"));
             case OPENAI -> new LlmConfig(openaiUrl, openaiModel, System.getenv("OPENAI_ACCESS_ID"), System.getenv("OPENAI_API_KEY"));
             case GEMINI -> new LlmConfig(geminiUrl, geminiModel, System.getenv("GEMINI_ACCESS_ID"), System.getenv("GEMINI_API_KEY"));

@@ -68,7 +68,6 @@ class QuestionServiceTest {
         assertNotNull(questionService.getProvider(Provider.GEMINI));
         assertNotNull(questionService.getProvider(Provider.OPENAI));
         assertNotNull(questionService.getProvider(Provider.GROQ));
-        assertNotNull(questionService.getProvider(Provider.TIMEWEB));
     }
 
     @ParameterizedTest

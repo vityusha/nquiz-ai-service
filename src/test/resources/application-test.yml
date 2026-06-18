@@ -13,7 +13,7 @@ micronaut:
       connect-timeout: 10s
   data:
     jdbc:
-      enable-sql-logging: true
+      enable-sql-logging: false
       dialect: H2
       operations:
         enable-read-only: false
@@ -24,10 +24,9 @@ jackson:
 netty:
   default-charset: UTF-8
 
+# LLM API keys are injected via Gradle test { environment ... } in build.gradle.
+# URLs use fixed test placeholders so no real credentials are required.
 llm:
-  timeweb:
-    url: https://agent.timeweb.cloud/api/v1/cloud-ai/agents/${TIMEWEB_ACCESS_ID}/v1/chat/completions
-    model: xai/grok-4-1-fast-non-reasoning
   groq:
     url: https://api.groq.com/openai/v1/chat/completions
     model: llama-3.1-70b-versatile
@@ -43,7 +42,7 @@ llm:
 
 datasources:
   default:
-    url: jdbc:sqlite:/data/nquiz-ai-service-test.db
+    url: jdbc:sqlite:build/test-db/nquiz-ai-service-test.db
     driverClassName: org.sqlite.JDBC
     username: ""
     password: ""
@@ -54,7 +53,7 @@ datasources:
     hikari:
       readOnly: false
       isReadOnly: false
-      maximum-pool-size: 1
+      maximum-pool-size: 5
     connectionProperties:
       journal_mode: WAL
       synchronous: NORMAL
@@ -64,5 +63,11 @@ flyway:
   datasources:
     default:
       enabled: true
+
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: ANONYMOUS
 
 kind: Application

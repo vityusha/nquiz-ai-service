@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for TokenAuthFilter.
  * Verifies authentication and authorization logic for API endpoints.
  */
-@MicronautTest
+@MicronautTest(transactional = false)
 @DisplayName("TokenAuthFilter Tests")
 class TokenAuthFilterTest {
 

@@ -21,9 +21,6 @@ netty:
   default-charset: UTF-8
 
 llm:
-  timeweb:
-    url: https://agent.timeweb.cloud/api/v1/cloud-ai/agents/${TIMEWEB_ACCESS_ID}/v1/chat/completions
-    model: xai/grok-4-1-fast-non-reasoning
   groq:
     url: https://api.groq.com/openai/v1/chat/completions
     model: llama-3.1-70b-versatile

@@ -22,7 +22,6 @@ class ModelEnumTest {
         assertTrue(contains(providers, Provider.GEMINI), "Should contain GEMINI");
         assertTrue(contains(providers, Provider.OPENAI), "Should contain OPENAI");
         assertTrue(contains(providers, Provider.GROQ), "Should contain GROQ");
-        assertTrue(contains(providers, Provider.TIMEWEB), "Should contain TIMEWEB");
     }
 
     @Test

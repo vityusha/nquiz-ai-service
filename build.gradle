@@ -100,6 +100,19 @@ test {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
     maxParallelForks = 1
+
+    doFirst {
+        file("${layout.buildDirectory.get()}/test-db").mkdirs()
+    }
+
+    environment "GROQ_API_KEY", "test-groq-api-key"
+    environment "GROK_ACCESS_ID", "test-grok-access-id"
+    environment "OPENAI_API_KEY", "test-openai-api-key"
+    environment "OPENAI_ACCESS_ID", "test-openai-access-id"
+    environment "GEMINI_API_KEY", "test-gemini-api-key"
+    environment "GEMINI_ACCESS_ID", "test-gemini-access-id"
+    environment "DEEPSEEK_API_KEY", "test-deepseek-api-key"
+    environment "DEEPSEEK_ACCESS_ID", "test-deepseek-access-id"
 }
 
 jacoco {

@@ -260,7 +260,7 @@ public class QuestionService {
     public LLMProvider getProvider(Provider provider) {
         return switch (provider) {
             case DEEPSEEK -> deepseekProvider;
-            case OPENAI, GROQ, TIMEWEB -> openaiProvider;
+            case OPENAI, GROQ -> openaiProvider;
             case GEMINI -> geminiProvider;
         };
     }

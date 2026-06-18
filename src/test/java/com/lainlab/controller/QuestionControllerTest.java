@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Integration tests for QuestionController.
  * These tests verify API endpoints, authentication, and request/response flow.
  */
-@MicronautTest
+@MicronautTest(transactional = false)
 @DisplayName("QuestionController Integration Tests")
 class QuestionControllerTest {
 
