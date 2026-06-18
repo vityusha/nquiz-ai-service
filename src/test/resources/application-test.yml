@@ -1,0 +1,68 @@
+micronaut:
+  application:
+    name: nquiz-ai-service
+  messages:
+    basename: i18n/messages
+  server:
+    default-charset: UTF-8
+    response:
+      default-charset: UTF-8
+  http:
+    client:
+      read-timeout: 60s
+      connect-timeout: 10s
+  data:
+    jdbc:
+      enable-sql-logging: true
+      dialect: H2
+      operations:
+        enable-read-only: false
+
+jackson:
+  default-charset: UTF-8
+
+netty:
+  default-charset: UTF-8
+
+llm:
+  timeweb:
+    url: https://agent.timeweb.cloud/api/v1/cloud-ai/agents/${TIMEWEB_ACCESS_ID}/v1/chat/completions
+    model: xai/grok-4-1-fast-non-reasoning
+  groq:
+    url: https://api.groq.com/openai/v1/chat/completions
+    model: llama-3.1-70b-versatile
+  openai:
+    url: https://api.openai.com/v1/chat/completions
+    model: gpt-4o-mini
+  deepseek:
+    url: https://api.deepseek.com/chat/completions
+    model: deepseek-v4-flash
+  gemini:
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent
+    model: gemini-2.5-flash
+
+datasources:
+  default:
+    url: jdbc:sqlite:/data/nquiz-ai-service-test.db
+    driverClassName: org.sqlite.JDBC
+    username: ""
+    password: ""
+    readOnly: false
+    options:
+      autoCommit: true
+      readOnly: false
+    hikari:
+      readOnly: false
+      isReadOnly: false
+      maximum-pool-size: 1
+    connectionProperties:
+      journal_mode: WAL
+      synchronous: NORMAL
+      busy_timeout: 30000
+
+flyway:
+  datasources:
+    default:
+      enabled: true
+
+kind: Application

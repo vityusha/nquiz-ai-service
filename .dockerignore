@@ -1,0 +1,36 @@
+# Build artifacts
+build/
+.gradle/
+out/
+*.jar
+
+# Git & CI
+.git/
+.github/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Secrets & local data
+.env
+.env.*
+!.env.example
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log
+logs/
+
+# Docs & misc
+*.md
+!README.md
+LICENSE.md
+
+# OS
+.DS_Store
+Thumbs.db

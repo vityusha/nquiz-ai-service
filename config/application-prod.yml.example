@@ -1,0 +1,11 @@
+# Copy to application-prod.yml on the VPS (this file is safe to commit as a template).
+# Real secrets belong in /opt/nquiz-ai-service/.env, not in this file.
+
+micronaut:
+  server:
+    port: 8080
+
+logger:
+  levels:
+    com.lainlab: INFO
+    root: WARN

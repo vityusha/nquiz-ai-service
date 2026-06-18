@@ -1,0 +1,23 @@
+micronaut:
+  application:
+    name: nquiz-ai-service
+  server:
+    port: 8080
+
+datasources:
+  default:
+    url: ${DB_URL:`jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-service.db`}
+    driver-class-name: org.sqlite.JDBC
+    maximum-pool-size: 1
+    connection-timeout: 30000
+
+flyway:
+  datasources:
+    default:
+      enabled: true
+
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: ANONYMOUS

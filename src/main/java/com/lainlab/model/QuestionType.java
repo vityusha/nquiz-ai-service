@@ -1,0 +1,23 @@
+package com.lainlab.model;
+
+public enum QuestionType {
+    GRAMMAR,
+    TENSES,
+    ARTICLES,
+    VOCABULARY,
+    PHRASAL_VERBS,
+    IDIOMS,
+    PREPOSITIONS,
+    WORD_FORMATION,
+    COLLOCATIONS,
+    SYNONYMS,
+    READING,
+    LISTENING,
+    DIALOGUES,
+    ERROR_CORRECTION,
+    TRANSFORMATION,
+    GAP_FILLING,
+    WORD_ORDER,
+    PRONUNCIATION,
+    REAL_LIFE
+}

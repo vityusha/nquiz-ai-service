@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/var/lib/nquiz-ai-service/data
+      - ./config:/nquiz-ai-service/config:ro
+    env_file:
+      - .env
+    environment:
+      MICRONAUT_ENVIRONMENTS: dev
+      MICRONAUT_CONFIG_FILES: /nquiz-ai-service/config/application.yml,/nquiz-ai-service/config/application-dev.yml
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

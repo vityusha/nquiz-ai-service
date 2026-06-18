@@ -1,0 +1,31 @@
+package com.lainlab.model;
+
+public enum Language {
+    ENGLISH,
+    SPANISH,
+    CHINESE,
+    HINDI,
+    ARABIC,
+    BENGALI,
+    PORTUGUESE,
+    RUSSIAN,
+    JAPANESE,
+    GERMAN,
+    FRENCH,
+    TURKISH,
+    KOREAN,
+    ITALIAN,
+    DUTCH,
+    POLISH,
+    UKRAINIAN,
+    ROMANIAN,
+    PERSIAN,
+    SWEDISH,
+    CZECH,
+    GREEK,
+    HEBREW,
+    THAI,
+    VIETNAMESE,
+    INDONESIAN,
+    MALAY
+}

@@ -1,0 +1,21 @@
+services:
+  app:
+    image: ${IMAGE:-ghcr.io/nibelung/nquiz-ai-service:latest}
+    container_name: nquiz-ai-service
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /var/lib/nquiz-ai-service/data:/var/lib/nquiz-ai-service/data
+      - /opt/nquiz-ai-service/config:/nquiz-ai-service/config:ro
+    env_file:
+      - /opt/nquiz-ai-service/.env
+    environment:
+      MICRONAUT_ENVIRONMENTS: prod
+      MICRONAUT_CONFIG_FILES: /nquiz-ai-service/config/application.yml,/nquiz-ai-service/config/application-prod.yml
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s

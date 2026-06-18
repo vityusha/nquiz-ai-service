@@ -1,0 +1,141 @@
+plugins {
+    id("io.micronaut.application") version "4.6.2"
+    id("io.micronaut.aot") version "4.6.2"
+    id 'com.google.cloud.tools.jib' version '3.5.3'
+    id 'jacoco'
+}
+
+version = "0.1"
+group = "com.lainlab"
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    annotationProcessor("io.micronaut:micronaut-http-validation")
+    annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
+    annotationProcessor("org.slf4j:slf4j-api:2.0.9")
+    annotationProcessor("ch.qos.logback:logback-classic:1.4.11")
+    implementation("io.micronaut:micronaut-jackson-databind")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
+    implementation("io.micronaut:micronaut-http-client")
+    implementation("io.micronaut:micronaut-management")
+    implementation("io.micronaut.serde:micronaut-serde-jackson")
+    implementation("io.projectreactor:reactor-core:3.6.0")
+    implementation("com.bucket4j:bucket4j-core:8.2.0")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+    implementation('io.pebbletemplates:pebble:3.2.4')
+    implementation("org.slf4j:slf4j-api:2.0.9")
+    implementation("ch.qos.logback:logback-classic:1.4.11")
+    runtimeOnly("org.yaml:snakeyaml:2.2")
+    // DB
+    implementation("org.xerial:sqlite-jdbc:3.45.1.0")
+    implementation("io.micronaut.data:micronaut-data-jdbc")
+    implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    implementation("io.micronaut.flyway:micronaut-flyway")
+    implementation("org.flywaydb:flyway-core")
+    // Tests
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
+    testImplementation "org.junit.jupiter:junit-jupiter-engine"
+    testImplementation "org.junit.jupiter:junit-jupiter-params"
+    testImplementation "io.micronaut.test:micronaut-test-junit5"
+    testImplementation "org.mockito:mockito-core"
+    testImplementation "org.mockito:mockito-junit-jupiter"
+    testImplementation "io.projectreactor:reactor-test"
+    testImplementation 'com.h2database:h2'
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+application {
+    mainClass = "com.lainlab.Application"
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion("21")
+    targetCompatibility = JavaVersion.toVersion("21")
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+graalvmNative.toolchainDetection = false
+
+micronaut {
+    runtime("netty")
+    testRuntime("junit5")
+    processing {
+        incremental(true)
+        annotations("com.lainlab.*")
+    }
+    aot {
+        // Please review carefully the optimizations enabled below
+        // Check https://micronaut-projects.github.io/micronaut-aot/latest/guide/ for more details
+        optimizeServiceLoading = false
+        convertYamlToJava = false
+        precomputeOperations = false
+        cacheEnvironment = true
+        optimizeClassLoading = true
+        deduceEnvironment = true
+        optimizeNetty = true
+        replaceLogbackXml = true
+    }
+}
+
+jib {
+    from {
+        image = 'eclipse-temurin:21-jre'
+    }
+    to {
+        image = 'nquiz-ai-service:latest'
+    }
+    container {
+        mainClass = 'com.lainlab.Application'
+        jvmFlags = ['-XX:+UseContainerSupport', '-XX:MaxRAMPercentage=75']
+        ports = ['8080']
+    }
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+    maxParallelForks = 1
+}
+
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+jacocoTestReport {
+    dependsOn test
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/config/**',
+                '**/model/**',
+                '**/dto/**',
+                '**/db/**'
+            ])
+        }))
+    }
+}
+
+tasks.register('testCoverageVerification') {
+    dependsOn jacocoTestReport
+    doLast {
+        println "Test coverage verification completed"
+    }
+}
+
+tasks.register('printVersion') {
+    doLast {
+        println project.version
+    }
+}
