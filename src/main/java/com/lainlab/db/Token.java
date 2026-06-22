@@ -20,6 +20,7 @@ public class Token {
     private String license_org;
     private String email;
     private int balance;
+    private int total;
     private boolean active;
     private boolean admin;
     private LocalDateTime createdAt;
@@ -57,6 +58,14 @@ public class Token {
 
     public void setBalance(int balance) {
         this.balance = balance;
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
     }
 
     public boolean isActive() {

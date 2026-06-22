@@ -282,6 +282,7 @@ class TokenAdminControllerTest {
         token.setLicenseOrg("Test Organization");
         token.setEmail("contact@org.com");
         token.setBalance(500);
+        token.setTotal(42);
         token.setActive(true);
         token.setAdmin(false);
         token.setCreatedAt(LocalDateTime.now());
@@ -291,6 +292,7 @@ class TokenAdminControllerTest {
         assertEquals("Test Organization", token.getLicenseOrg());
         assertEquals("contact@org.com", token.getEmail());
         assertEquals(500, token.getBalance());
+        assertEquals(42, token.getTotal());
         assertTrue(token.isActive());
         assertFalse(token.isAdmin());
         assertNotNull(token.getCreatedAt());

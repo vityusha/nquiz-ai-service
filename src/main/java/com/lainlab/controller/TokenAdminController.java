@@ -57,6 +57,7 @@ public class TokenAdminController {
         token.setLicenseOrg(req.getLicenseOrg().trim());
         token.setEmail(req.getEmail().trim());
         token.setBalance(req.getBalance());
+        token.setTotal(0);
         token.setActive(true);
         token.setAdmin(req.isAdmin());
         token.setCreatedAt(LocalDateTime.now());
@@ -90,6 +91,7 @@ public class TokenAdminController {
         token.setLicenseOrg("NQuiz-AI-service Admin");
         token.setEmail("root@localhost");
         token.setBalance(0);
+        token.setTotal(0);
         token.setActive(true);
         token.setCreatedAt(LocalDateTime.now());
 

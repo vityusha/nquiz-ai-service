@@ -285,9 +285,10 @@ public class QuestionService {
         }
 
         token.setBalance(currentBalance - count);
+        token.setTotal(token.getTotal() + count);
         tokenRepository.update(token);
 
-        LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}",
-                 count, token.getId(), token.getBalance());
+        LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
+                 count, token.getId(), token.getBalance(), token.getTotal());
     }
 }

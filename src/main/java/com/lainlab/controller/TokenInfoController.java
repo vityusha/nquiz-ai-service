@@ -50,6 +50,7 @@ public class TokenInfoController {
                 token.getLicenseOrg(),
                 token.getEmail(),
                 token.getBalance(),
+                token.getTotal(),
                 token.isActive(),
                 token.getCreatedAt()
         ));
@@ -62,6 +63,7 @@ public class TokenInfoController {
             String license_org,
             String owner,
             int balance,
+            int total,
             boolean active,
             java.time.LocalDateTime createdAt
     ) {}
