@@ -1,5 +1,6 @@
 package com.lainlab.db;
 
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.annotation.Repository;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
@@ -13,4 +14,7 @@ import java.util.Optional;
 public interface TokenRepository extends CrudRepository<Token, Long> {
     Optional<Token> findByToken(String token);
     Optional<Token> findByLicenseNo(int licenseNo);
+
+    @Query("SELECT COUNT(*) FROM tokens WHERE admin = TRUE")
+    long countAdmins();
 }

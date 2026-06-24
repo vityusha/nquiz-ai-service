@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    // --- Компиляция (Code Generation) ---
+    // --- Compilation (Code Generation) ---
     annotationProcessor("io.micronaut:micronaut-http-validation")
     annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
 
@@ -22,30 +22,30 @@ dependencies {
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-management")
 
-    // --- Сериализация (Только Serde в Micronaut 4) ---
+    // --- Serialization (Only Serde in Micronaut 4) ---
     implementation("io.micronaut.serde:micronaut-serde-jackson")
 
-    // --- Утилиты (Оставил как есть, но подумайте над интеграциями Micronaut) ---
+    // --- Utilities
     implementation("io.projectreactor:reactor-core") // Версию убрал, Micronaut сам подставит нужную
     implementation("com.bucket4j:bucket4j-core:8.2.0")
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
     implementation('io.pebbletemplates:pebble:3.2.4')
 
-    // --- Логирование (Только implementation/runtimeOnly) ---
+    // --- Logging ---
     implementation("org.slf4j:slf4j-api:2.0.9")
     runtimeOnly('ch.qos.logback:logback-classic')
 
-    // --- Конфигурация ---
+    // --- Configuration ---
     runtimeOnly("org.yaml:snakeyaml")
 
-    // --- База Данных ---
+    // --- Database ---
     implementation("org.xerial:sqlite-jdbc:3.45.1.0")
     implementation("io.micronaut.data:micronaut-data-jdbc")
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
     implementation("io.micronaut.flyway:micronaut-flyway")
     implementation("org.flywaydb:flyway-core")
 
-    // --- Тесты ---
+    // --- Tests ---
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testImplementation "org.junit.jupiter:junit-jupiter-engine"
     testImplementation "org.junit.jupiter:junit-jupiter-params"
