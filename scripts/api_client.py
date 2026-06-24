@@ -30,10 +30,10 @@ examples:
 
   python scripts/api_client.py capabilities --lang en
 
-  python scripts/api_client.py token-info --token nq_user_...
+  python scripts/api_client.py token-info --token sk_user_...
 
   python scripts/api_client.py questions \\
-    --token nq_user_... \\
+    --token sk_user_... \\
     --provider DEEPSEEK \\
     --count 3 \\
     --mode ONE_CORRECT \\
@@ -44,16 +44,16 @@ examples:
     --pretty
 
   python scripts/api_client.py create-user \\
-    --admin-token nq_admin_... \\
+    --admin-token sk_admin_... \\
     --license-no 100 \\
     --license-org "Acme Corp" \\
     --email user@acme.com \\
     --balance 50
 
-  python scripts/api_client.py list-tokens --admin-token nq_admin_... --pretty
+  python scripts/api_client.py list-tokens --admin-token sk_admin_... --pretty
 
   python scripts/api_client.py topup-license \\
-    --admin-token nq_admin_... \\
+    --admin-token sk_admin_... \\
     --license-no 100 \\
     --amount 25
 """
@@ -69,12 +69,12 @@ example:
 """,
     "token-info": """
 example:
-  python scripts/api_client.py token-info --token nq_user_...
+  python scripts/api_client.py token-info --token sk_user_...
 """,
     "questions": """
 example:
   python scripts/api_client.py questions \\
-    --token nq_user_... \\
+    --token sk_user_... \\
     --provider DEEPSEEK \\
     --count 3 \\
     --mode ONE_CORRECT \\
@@ -87,7 +87,7 @@ example:
     "create-user": """
 example:
   python scripts/api_client.py create-user \\
-    --admin-token nq_admin_... \\
+    --admin-token sk_admin_... \\
     --license-no 100 \\
     --license-org "Acme Corp" \\
     --email user@acme.com \\
@@ -95,27 +95,31 @@ example:
 """,
     "create-admin": """
 example:
-  python scripts/api_client.py create-admin --admin-token nq_admin_...
+  python scripts/api_client.py create-admin --admin-token sk_admin_...
 """,
     "deactivate": """
 example:
-  python scripts/api_client.py deactivate --admin-token nq_admin_... --id 1
+  python scripts/api_client.py deactivate --admin-token sk_admin_... --license-no 1
+""",
+    "activate": """
+example:
+  python scripts/api_client.py activate --admin-token sk_admin_... --license-no 1
 """,
     "list-tokens": """
 example:
-  python scripts/api_client.py list-tokens --admin-token nq_admin_... --pretty
+  python scripts/api_client.py list-tokens --admin-token sk_admin_... --pretty
 """,
     "topup-token": """
 example:
   python scripts/api_client.py topup-token \\
-    --admin-token nq_admin_... \\
-    --token-value nq_user_... \\
+    --admin-token sk_admin_... \\
+    --token-value sk_user_... \\
     --amount 25
 """,
     "topup-license": """
 example:
   python scripts/api_client.py topup-license \\
-    --admin-token nq_admin_... \\
+    --admin-token sk_admin_... \\
     --license-no 100 \\
     --amount 25
 """,
@@ -264,7 +268,17 @@ def cmd_deactivate(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "POST",
-        f"/admin/tokens/deactivate/{args.id}",
+        f"/admin/tokens/deactivate/{args.license-no}",
+        token=args.admin_token,
+    )
+    return print_response(status, payload, args.pretty)
+
+
+def cmd_activate(args: argparse.Namespace) -> int:
+    client = ApiClient(args.base_url, args.timeout)
+    status, payload = client.request(
+        "POST",
+        f"/admin/tokens/activate/{args.license-no}",
         token=args.admin_token,
     )
     return print_response(status, payload, args.pretty)
@@ -273,6 +287,15 @@ def cmd_deactivate(args: argparse.Namespace) -> int:
 def cmd_list_tokens(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request("GET", "/admin/tokens/all", token=args.admin_token)
+    return print_response(status, payload, args.pretty)
+
+
+def cmd_get_token(args: argparse.Namespace) -> int:
+    client = ApiClient(args.base_url, args.timeout)
+    status, payload = client.request(
+        "GET", 
+        f"/admin/tokens/info/{args.license-no}", 
+        token=args.admin_token)
     return print_response(status, payload, args.pretty)
 
 
@@ -364,14 +387,24 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--admin-token", required=True)
     p.set_defaults(handler=cmd_create_admin)
 
-    p = add_subparser(sub, "deactivate", "POST /admin/tokens/deactivate/{id}")
+    p = add_subparser(sub, "deactivate", "POST /admin/tokens/deactivate/{license_no}")
     p.add_argument("--admin-token", required=True)
-    p.add_argument("--id", type=int, required=True, help="Token database ID")
+    p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
     p.set_defaults(handler=cmd_deactivate)
+
+    p = add_subparser(sub, "activate", "POST /admin/tokens/activate/{license_no}")
+    p.add_argument("--admin-token", required=True)
+    p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
+    p.set_defaults(handler=cmd_activate)
 
     p = add_subparser(sub, "list-tokens", "GET /admin/tokens/all")
     p.add_argument("--admin-token", required=True)
     p.set_defaults(handler=cmd_list_tokens)
+
+    p = add_subparser(sub, "get-token", "GET /admin/tokens/info/{license_no}")
+    p.add_argument("--admin-token", required=True)
+    p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
+    p.set_defaults(handler=cmd_get_token)
 
     p = add_subparser(sub, "topup-token", "POST /admin/tokens/{token}/topup")
     p.add_argument("--admin-token", required=True)

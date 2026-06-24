@@ -28,6 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("TokenAdminController Integration Tests")
 class TokenAdminControllerTest {
 
+    private final int LICENSE_NO = 86;
+
     @Inject
     @Client("/")
     HttpClient client;
@@ -37,6 +39,7 @@ class TokenAdminControllerTest {
 
     private Token adminToken;
     private Token userToken;
+    private Token inactiveToken;
 
     @BeforeEach
     void setUp() {
@@ -44,7 +47,7 @@ class TokenAdminControllerTest {
 
         // Create admin token
         adminToken = new Token();
-        adminToken.setToken("nq_admin_test_integration_token");
+        adminToken.setToken("sk_admin_test_integration_token");
         adminToken.setBalance(0);
         adminToken.setActive(true);
         adminToken.setAdmin(true);
@@ -56,15 +59,27 @@ class TokenAdminControllerTest {
 
         // Create regular user token
         userToken = new Token();
-        userToken.setToken("nq_user_test_integration_token");
+        userToken.setToken("sk_user_test_integration_token_active");
         userToken.setBalance(100);
         userToken.setActive(true);
         userToken.setAdmin(false);
-        userToken.setLicenseNo(123);
+        userToken.setLicenseNo(LICENSE_NO);
         userToken.setLicenseOrg("Test Org");
         userToken.setEmail("user@example.com");
         userToken.setCreatedAt(LocalDateTime.now());
         tokenRepository.save(userToken);
+
+        // Create inactive regular user token
+        inactiveToken = new Token();
+        inactiveToken.setToken("sk_user_test_integration_token_inactive");
+        inactiveToken.setBalance(100);
+        inactiveToken.setActive(false);
+        inactiveToken.setAdmin(false);
+        inactiveToken.setLicenseNo(LICENSE_NO+1);
+        inactiveToken.setLicenseOrg("Test Org");
+        inactiveToken.setEmail("user@example.com");
+        inactiveToken.setCreatedAt(LocalDateTime.now());
+        tokenRepository.save(inactiveToken);
     }
 
     @Test
@@ -182,13 +197,22 @@ class TokenAdminControllerTest {
     void testDeactivateToken() {
         assertTrue(userToken.isActive(), "Token should be active initially");
 
-        Long tokenId = userToken.getId();
-        Optional<Token> found = tokenRepository.findById(tokenId);
+        Optional<Token> found = tokenRepository.findByLicenseNo(LICENSE_NO);
 
         assertTrue(found.isPresent(), "Token should exist");
         assertTrue(found.get().isActive(), "Token should be active");
     }
 
+    @Test
+    @DisplayName("Should activate token successfully")
+    void testActivateToken() {
+        assertFalse(inactiveToken.isActive(), "Token should not be active initially");
+
+        Optional<Token> found = tokenRepository.findByLicenseNo(LICENSE_NO+1);
+
+        assertTrue(found.isPresent(), "Token should exist");
+        assertFalse(found.get().isActive(), "Token should not be active");
+    }
     @Test
     @DisplayName("Should handle topup by token value")
     void testTopupByTokenValue() {
@@ -209,7 +233,7 @@ class TokenAdminControllerTest {
         TopUpRequest topupReq = new TopUpRequest();
         topupReq.setAmount(150);
 
-        Optional<Token> token = tokenRepository.findByLicenseNo(123);
+        Optional<Token> token = tokenRepository.findByLicenseNo(LICENSE_NO);
         assertTrue(token.isPresent(), "Token with license should exist");
 
         int initialBalance = token.get().getBalance();
@@ -235,7 +259,7 @@ class TokenAdminControllerTest {
     void testUserTokenGeneration() {
         String userKey = TokenAdminController.generateApiKey(false);
 
-        assertTrue(userKey.startsWith("nq_user_"), "User token should start with nq_user_");
+        assertTrue(userKey.startsWith("sk_user_"), "User token should start with sk_user_");
         assertTrue(userKey.length() > 20, "User token should have sufficient length");
     }
 
@@ -244,7 +268,7 @@ class TokenAdminControllerTest {
     void testAdminTokenGeneration() {
         String adminKey = TokenAdminController.generateApiKey(true);
 
-        assertTrue(adminKey.startsWith("nq_admin_"), "Admin token should start with nq_admin_");
+        assertTrue(adminKey.startsWith("sk_admin_"), "Admin token should start with sk_admin_");
         assertTrue(adminKey.length() > 20, "Admin token should have sufficient length");
     }
 

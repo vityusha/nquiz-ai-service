@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.Optional;
 
 @Controller("/admin/tokens")
 public class TokenAdminController {
@@ -101,18 +102,32 @@ public class TokenAdminController {
         return HttpResponse.created(token);
     }
 
-    @Post("/deactivate/{id}")
-    public HttpResponse<?> deactivateToken(@PathVariable Long id) {
-        LOG.info("Deactivating token with ID: {}", id);
+    @Post("/deactivate/{license_no}")
+    public HttpResponse<?> deactivateToken(@PathVariable int license_no) {
+        LOG.info("Deactivating token with license number: {}", license_no);
 
-        return tokens.findById(id)
+        return tokens.findByLicenseNo(license_no)
                 .map(token -> {
                     token.setActive(false);
                     tokens.update(token);
-                    LOG.info("Successfully deactivated token, ID: {}, email: {}", id, token.getEmail());
+                    LOG.info("Successfully deactivated token, ID: {}, email: {}", token.getId(), token.getEmail());
                     return HttpResponse.ok(token);
                 })
                 .orElse(HttpResponse.notFound());
+    }
+
+    @Post("/activate/{license_no}")
+    public HttpResponse<?> activateToken(@PathVariable int license_no) {
+        LOG.info("Activating token with license number: {}", license_no);
+
+        return tokens.findByLicenseNo(license_no)
+            .map(token -> {
+                token.setActive(true);
+                tokens.update(token);
+                LOG.info("Successfully activated token, ID: {}, email: {}", token.getId(), token.getEmail());
+                return HttpResponse.ok(token);
+            })
+            .orElse(HttpResponse.notFound());
     }
 
     @Get("/all")
@@ -123,8 +138,38 @@ public class TokenAdminController {
         return allTokens;
     }
 
+    @Get("/info/{license_no}")
+    public HttpResponse<?> info(@PathVariable int license_no) {
+        LOG.debug("Token info requested for license: {}", license_no);
+
+        Optional<Token> opt = tokens.findByLicenseNo(license_no);
+        if (opt.isEmpty()) {
+            LOG.warn("Token info requested with invalid license");
+            return HttpResponse.unauthorized();
+        }
+        Token token = opt.get();
+
+        if (!token.isActive()) {
+            LOG.warn("Token info requested for inactive token, license: {}", token.getLicenseNo());
+            return HttpResponse.unauthorized();
+        }
+
+        LOG.info("Successfully retrieved token info for license: {}, organization: {}", token.getLicenseNo(), token.getLicenseOrg());
+
+        return HttpResponse.ok(new TokenInfoController.TokenInfoResponse(
+            token.getToken(),
+            token.getLicenseNo(),
+            token.getLicenseOrg(),
+            token.getEmail(),
+            token.getBalance(),
+            token.getTotal(),
+            token.isActive(),
+            token.getCreatedAt()
+        ));
+    }
+
     public static String generateApiKey(boolean admin) {
-        String prefix = admin ? "nq_admin_" : "nq_user_";
+        String prefix = admin ? "sk_admin_" : "sk_user_";
         String random = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(SecureRandom.getSeed(32));
         return prefix + random;
