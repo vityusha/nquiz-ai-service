@@ -1,15 +1,18 @@
 # syntax=docker/dockerfile:1
 
-FROM eclipse-temurin:21-jdk-alpine AS build
+#
+# To build JAR during docker build
+#
+# FROM eclipse-temurin:21-jdk-alpine AS build
+#
+# WORKDIR /workspace
+# 
+# COPY gradle gradle
+# COPY gradlew gradlew.bat build.gradle settings.gradle gradle.properties ./
+# RUN chmod +x gradlew
 
-WORKDIR /workspace
-
-COPY gradle gradle
-COPY gradlew gradlew.bat build.gradle settings.gradle gradle.properties ./
-RUN chmod +x gradlew
-
-COPY src src
-RUN ./gradlew runnerJar --no-daemon -x test
+# COPY src src
+# RUN ./gradlew shadowJar --no-daemon -x test
 
 FROM eclipse-temurin:21-jre-alpine
 
@@ -21,7 +24,7 @@ RUN addgroup -S appgroup \
     && mkdir -p /var/lib/nquiz-ai-service/data \
     && chown -R appuser:appgroup /var/lib/nquiz-ai-service
 
-COPY --from=build /workspace/build/libs/*-runner.jar app.jar
+COPY build/libs/*-all.jar app.jar
 RUN chown appuser:appgroup app.jar
 
 USER appuser

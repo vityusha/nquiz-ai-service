@@ -1,8 +1,11 @@
 # Build artifacts
-build/
 .gradle/
 out/
 *.jar
+build/
+!build/libs/
+build/libs/*
+!build/libs/*-all.jar
 
 # Git & CI
 .git/
