@@ -15,7 +15,7 @@ out/
 .env
 .env.local
 config/application-prod.yml
-.ssh
+.ssh/
 
 # SQLite database files
 *.db
