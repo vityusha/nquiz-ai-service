@@ -56,6 +56,13 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
+
+  # Log via ssh -L 8080:localhost:8080 deploy@SERVER_IP and http://localhost:8080
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
 ```
 
 ### 2. Authorization in GitHub Container Registry (GHCR)
@@ -161,7 +168,7 @@ flyway:
 
 logger:
   levels:
-    com.example: INFO
+    com.lainlab: INFO
     root: WARN
 ```
 
