@@ -18,8 +18,8 @@ FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-RUN addgroup -S appgroup \
-    && adduser -S appuser -G appgroup \
+RUN addgroup -S appgroup -g 1000 \
+    && adduser -S appuser -u 1000 -G appgroup \
     && apk add --no-cache curl \
     && mkdir -p /var/lib/nquiz-ai-service/data \
     && chown -R appuser:appgroup /var/lib/nquiz-ai-service
