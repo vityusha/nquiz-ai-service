@@ -86,7 +86,7 @@ jobs:
           echo "$SSH_KEY" > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
 
-          ssh -p ${VPS_PORT} -i /tmp/deploy_key -o StrictHostKeyChecking=no "${DEPLOY_USER}@${VPS_HOST}" <<EOF
+          ssh -p ${VPS_PORT:-22} -i /tmp/deploy_key -o StrictHostKeyChecking=no "${DEPLOY_USER}@${VPS_HOST}" <<EOF
           set -euo pipefail
           cd /opt/nquiz-ai-service
           export IMAGE=${IMAGE_NAME}:latest
