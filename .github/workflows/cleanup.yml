@@ -1,0 +1,25 @@
+name: Cleanup Old Docker Images
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday
+    
+  # 2. Ability to run by hand
+  workflow_dispatch:
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup-ghcr:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write # Необходимы права на удаление пакетов
+    steps:
+      - name: Delete old container images from GHCR
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'nquiz-ai-service'
+          package-type: 'container'
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: 'false'

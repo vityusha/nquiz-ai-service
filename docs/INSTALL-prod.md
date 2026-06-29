@@ -31,6 +31,8 @@ sudo mkdir -p /opt/nquiz-ai-service
 sudo chown deploy:deploy /opt/nquiz-ai-service
 ```
 
+Make shure that user ID is 1000 and group ID is 1000,
+
 Create _/opt/nquiz-ai-service/docker-compose.yml_
 
 ```yaml
@@ -105,9 +107,9 @@ cat ~/.ssh/github_deploy
 Copy the entire contents (from -----BEGIN... to -----END...).
 
 - Go to your **GitHub repository -> Settings -> Secrets and variables -> Actions**.
-- Create three secrets:
+- Create four secrets:
 - **VPS_HOST** = Your server's IP address
-- **VPS_PORT** = (Optional) Your server's SSH port
+- **VPS_PORT** = Your server's SSH port
 - **VPS_USER** = deploy
 - **VPS_SSH_KEY** = Paste the copied private key here
 
@@ -120,7 +122,7 @@ Create the _/opt/nquiz-ai-service/.env_ on the server with appropriate values.
 # Never commit .env to git.
 
 # SQLite database path inside the container
-DB_URL=jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-service.db
+DB_URL=jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db
 
 # LLM provider credentials (set only the providers you use)
 GROQ_API_KEY=
@@ -149,7 +151,7 @@ micronaut:
 
 datasources:
   default:
-    url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz.db
+    url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db
     driver-class-name: org.sqlite.JDBC
 
 flyway:
@@ -187,6 +189,12 @@ sudo ufw enable
 ```
 
 #### Configuring Reverse Proxy in Nginx:
+
+Remove default site:
+
+```bash
+sudo rm /etc/nginx/sites-enabled/default
+```
 
 Create a configuration file for your service:
 
@@ -244,6 +252,12 @@ It will ask: Redirect HTTP to HTTPS? - Be sure to press 2 (Redirect).
 
 Done! Certbot will register the keys in Nginx, enable redirection from http:// to https://, and configure automatic certificate renewal (a cron task is created automatically).
 
+*NOTE:* On modern Debian systems, you do not need to manually configure a crontab entry for Certbot because automatic renewals are natively handled by a systemd timer. Debian utilizes systemd timers to handle background certificate renewals. You can verify that your automated renewal is already scheduled and active by running the following command:
+
+```bash
+sudo systemctl list-timers | grep certbot
+```
+
 #### Important Change in Micronaut (Or Not?)
 
 Since your service is now behind Nginx (which terminates HTTPS and forwards requests internally over HTTP), Micronaut may not be aware that a secure connection is being used externally. This is important if you're generating links or using OAuth.
@@ -265,3 +279,23 @@ micronaut:
 sudo systemctl enable docker
 sudo systemctl start docker
 ```
+
+### 7. Check if everything works
+
+In the terminal, enter:
+
+```bash
+curl -fsSL https://api.yourdomain.com/health
+```
+
+or in the browser address bar:
+
+```https://api.yourdomain.com/health```
+
+You should get something like:
+
+```js
+{"status":"UP"}
+```
+
+That's it!
