@@ -57,11 +57,13 @@ services:
       start_period: 60s
     restart: unless-stopped
 
-  # Log via ssh -L 8080:localhost:8080 deploy@SERVER_IP and http://localhost:8080
+  # Log via ssh -L -i .ssh/PRIVATE_KEY 8888:localhost:8888 deploy@SERVER_IP and http://localhost:8888
   dozzle:
     image: amir20/dozzle:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "127.0.0.1:8888:8080"
     restart: unless-stopped
 ```
 
@@ -227,6 +229,15 @@ server {
 }
 ```
 
+By default, Nginx tells all hackers what version it's using in response headers. This helps them find vulnerabilities.
+
+Open _/etc/nginx/nginx.conf_  and check for the following two lines inside the _http \{ ... \}_ block:
+
+```nginx
+server_tokens off;
+proxy_hide_header X-Powered-By;
+```
+
 #### Activate the configuration and restart Nginx:
 
 ```bash
@@ -305,4 +316,141 @@ You should get something like:
 {"status":"UP"}
 ```
 
+### 8. Set up Uptime Monitoring
+
+Register at UptimeRobot.com (free for up to 50 monitors).
+Add an HTTP(s) type monitor and enter the URL: https://api.yourdomain.com/health.
+Now, if the service goes down, you'll receive an email and a Telegram message.
+
+### 9. Backup SQLite database to S3 storage
+
+#### Step 1: Preparing S3 Storage
+
+First, you need a bucket and access keys. This can be Amazon S3 or any compatible service.
+
+Create a bucket (for example, _nquiz-ai-service_).
+Create an Access Key ID and Secret Access Key with write access to this bucket.
+Note the Endpoint URL (for example, _https://s3.amazonaws.com_ for AWS).
+
+#### Step 2: Adding Secrets to the VPS
+
+Never enter keys directly into _docker-compose.yml_. Log into your VPS and add them to your _.env_ file:
+
+Add these lines (fill in your details):
+
+```env
+LITESTREAM_ACCESS_KEY_ID=your_key_id
+LITESTREAM_SECRET_ACCESS_KEY=your_secret_key
+LITESTREAM_S3_ENDPOINT=https://storage.yandexcloud.net
+LITESTREAM_S3_BUCKET=nquiz-backups
+```
+
+#### Step 3: Creating the Litestream Configuration
+
+In the same folder on your VPS, create the Litestream configuration file _litestream.yml_:
+
+```yaml
+dbs:
+- path: /data/nquiz-ai-users.db
+replicas:
+- URL: s3://${LITESTREAM_S3_BUCKET}/nquiz-ai-users-db
+Endpoint: ${LITESTREAM_S3_ENDPOINT}
+Access-Key-ID: ${LITESTREAM_ACCESS_KEY_ID}
+Secret-Access-Key: ${LITESTREAM_SECRET_ACCESS_KEY}
+```
+
+Logic: We'll tell the Litestream container to mount the _./data_ folder (where the database is located) inside itself at the /data path. Litestream will monitor the _/data/nquiz-ai-users.db_ file and upload it to S3.
+
+#### Step 4: Update docker-compose.yml on the VPS
+
+Open your _docker-compose.yml_ on the server:
+
+Add the new litestream service and the important **depends_on** property for app (so that the database has time to be created before streaming starts). The file should look like this:
+
+```yaml
+services:
+  app:
+    image: ghcr.io/vityusha/nquiz-ai-service:latest
+    # ADD this: Wait until container become healthy
+    depends_on:
+      litestream:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/var/lib/nquiz-ai-service/data
+      - ./config:/nquiz-ai-service/config:ro
+    env_file:
+      - .env
+    environment:
+      MICRONAUT_ENVIRONMENTS: prod
+      MICRONAUT_CONFIG_FILES: /nquiz-ai-service/config/application-prod.yml
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # ADD THIS BLOCK:
+  litestream:
+    image: litestream/litestream:latest
+    user: "0:0" # Root user is normal for isolated container
+    volumes:
+      - ./data:/data
+      - ./litestream.yml:/etc/litestream.yml:ro
+    env_file:
+      - .env
+    command: replicate -config /etc/litestream.yml
+    restart: unless-stopped
+
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "127.0.0.1:8888:8080"
+    restart: unless-stopped
+```
+
+#### Step 5: Important SQLite nuance (WAL mode)
+
+Litestream only works if SQLite is using **WAL** (Write-Ahead Log) mode.
+
+Fortunately, Micronaut (via HikariCP and the modern SQLite driver) enables it by default. But to be 100% sure, you can add one line to the database URL on your VPS.
+
+Open the database configuration file on the VPS _/opt/nquiz-ai-service/config/application-prod.yml_.
+
+Change the URL by adding **?journal_mode=WAL** to the end and add connectionProperties:
+
+```yaml
+datasources:
+  default:
+    url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz_ai_users.db?journal_mode=WAL
+    driver-class-name: org.sqlite.JDBC
+    connectionProperties:
+      synchronous: NORMAL
+``` 
+#### Step 6: Run and Verify
+
+Now restart the entire stack on the VPS:
+
+```bash
+cd /opt/nquiz-ai-service
+docker compose down
+docker compose up -d
+```
+
+How to verify that it's working:
+
+View the Litestream logs:
+
+```bash
+docker compose logs -f litestream
+```
+
+You should see messages like _"replicating db..."_ or information about synchronization with S3. If there are no errors, everything is fine.
+
+Log in to your S3 storage (via the Yandex.Cloud/AWS web interface). A folder named nquiz-db should appear inside the nquiz-backups bucket, containing files (e.g., 00000000000000001.db and .idx).
 That's it!

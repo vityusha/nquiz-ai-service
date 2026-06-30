@@ -13,6 +13,12 @@ micronaut:
       dialect: H2
       operations:
         enable-read-only: false
+  router:
+    static-resources:
+      default:
+        enabled: true
+        mapping: "/**"
+        paths: "classpath:public"
 
 jackson:
   default-charset: UTF-8
