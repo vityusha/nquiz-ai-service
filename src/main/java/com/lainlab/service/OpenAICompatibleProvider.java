@@ -57,7 +57,7 @@ public class OpenAICompatibleProvider implements LLMProvider {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bearerAuth(cfg.apiKey());
 
-        LOG.info("LLM Request to {}: {}", cfg.url(), root.toString());
+        LOG.info("LLM Request: {}", root.toString().substring(0, Math.min(200, root.toString().length())) + (root.toString().length() > 200 ? "..." : ""));
 
         return Publishers.map(
                 client.retrieve(http),
