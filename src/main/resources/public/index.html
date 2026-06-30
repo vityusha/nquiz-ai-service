@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NQuiz AI Service</title>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Анимированный фон */
+        .bg-blob {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: linear-gradient(#3b82f6, #8b5cf6);
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            animation: float 8s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50px, -50px) scale(1); }
+            50% { transform: translate(50px, 50px) scale(1.2); }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            font-size: 2.0rem;
+            font-weight: 800;
+            background: linear-gradient(to right, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto 2rem auto;
+            line-height: 1.6;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background-color: #1e293b;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            border: 1px solid #334155;
+            font-weight: 600;
+            color: #4ade80;
+            box-shadow: 0 0 15px rgba(74, 222, 128, 0.1);
+        }
+
+        .pulse {
+            width: 10px;
+            height: 10px;
+            background-color: #4ade80;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #4ade80;
+            animation: pulse-animation 2s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { opacity: 1; transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+            100% { opacity: 1; transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+        }
+
+        .tech-stack {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background-color: #1e293b;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+        }
+
+        .link {
+            background-color: #1e293b;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+        }
+    </style>
+</head>
+<body>
+<div class="bg-blob"></div>
+<div class="container">
+    <h1>NQuiz AI</h1>
+    <p>A high-performance microservice for processing and generating quizzes powered by artificial intelligence.</p>
+
+    <div class="status-badge">
+        <div class="pulse"></div>
+        Operational
+    </div>
+
+    <!-- Контейнер, куда JS вставит эндпоинты -->
+    <div class="endpoints-section" id="endpoints-container" style="display: none;">
+        <h2>Доступные эндпоинты</h2>
+        <div id="endpoints-list"></div>
+    </div>
+
+    <div class="tech-stack">
+        <span class="badge">Java 21</span>
+        <span class="badge">Micronaut 4</span>
+        <span class="badge">SQLite + Litestream</span>
+        <span class="badge">Docker</span>
+    </div>
+
+    <div>
+        <h2><a href="https://lainlab.com/?lang=en" style="text-decoration: none;">Lain S.r.l.</a></h2>
+    </div>
+
+    <script>
+        // Обращаемся к нашему новому безопасному JSON-эндпоинту
+        const META_URL = '/meta/endpoints';
+
+        async function loadEndpoints() {
+            try {
+                const response = await fetch(META_URL);
+                if (!response.ok) throw new Error('Meta endpoint not found');
+
+                const endpoints = await response.json();
+                const listElement = document.getElementById('endpoints-list');
+                const container = document.getElementById('endpoints-container');
+                container.style.display = 'block';
+
+                endpoints.forEach(ep => {
+                        const card = document.createElement('div');
+                        card.className = 'endpoint-card';
+
+                        const methodClass = ep.method.toLowerCase() === 'post' ? 'method-badge post' : 'method-badge';
+
+                        card.innerHTML = `
+                            <span class="${methodClass}">${ep.method.toUpperCase()}</span>
+                            <span class="endpoint-path">${ep.path}</span>
+                            <span class="endpoint-desc">${ep.description}</span>
+                        `;
+
+                        card.onclick = () => window.open(ep.path, '_blank');
+                        listElement.appendChild(card);
+                });
+
+            } catch (error) {
+                console.log('Endpoints list not loaded:', error.message);
+            }
+        }
+
+        loadEndpoints();
+    </script>
+</body>
+</html>
