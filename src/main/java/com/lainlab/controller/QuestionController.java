@@ -16,7 +16,9 @@ public class QuestionController {
 
     @Post
     public Mono<QuestionResponseList> generate(@Body QuestionRequest req, HttpRequest<?> httpRequest) throws Exception {
-        String ip = httpRequest.getRemoteAddress().getAddress().getHostAddress();
+        String ip = httpRequest.getAttribute("realClientIp", String.class)
+            .orElseGet(() -> httpRequest.getRemoteAddress().getAddress().getHostAddress());
+
         return Mono.from(questionService.generateReactive(req, ip, httpRequest));
     }
 }

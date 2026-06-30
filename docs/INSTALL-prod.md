@@ -157,6 +157,8 @@ Paste the **minimal** production config here. The most important thing is to cor
 micronaut:
   application:
     name: nquiz-ai-service
+  server:
+    forwarded-header-strategy: NATIVE
 
 datasources:
   default:
@@ -351,9 +353,9 @@ In the same folder on your VPS, create the Litestream configuration file _litest
 
 ```yaml
 dbs:
-- path: /data/nquiz-ai-users.db
+  - path: /data/nquiz-ai-users.db
 replicas:
-- URL: s3://${LITESTREAM_S3_BUCKET}/nquiz-ai-users-db
+  - URL: s3://${LITESTREAM_S3_BUCKET}/nquiz-ai-users-db
 Endpoint: ${LITESTREAM_S3_ENDPOINT}
 Access-Key-ID: ${LITESTREAM_ACCESS_KEY_ID}
 Secret-Access-Key: ${LITESTREAM_SECRET_ACCESS_KEY}
