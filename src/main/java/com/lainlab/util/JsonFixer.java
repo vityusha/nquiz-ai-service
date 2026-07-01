@@ -11,10 +11,10 @@ public class JsonFixer {
             content = content.replace("\\\"", "\"");
         }
 
-        // Убираем запятые перед закрывающими скобками
+        // Remove trailing commas before closing brackets
         content = content.replaceAll(",\\s*([}\\]])", "$1");
 
-        // Убираем Markdown-кодовые блоки
+        // Strip Markdown code fences
         if (content.startsWith("```")) {
             content = content.replaceAll("```json", "")
                     .replaceAll("```", "")

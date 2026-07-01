@@ -65,7 +65,7 @@ public class GeminiProvider implements LLMProvider {
                     try {
                         JsonNode node = mapper.readTree(json);
 
-                        // Проверка на ошибки от Gemini
+                        // Check for Gemini API errors
                         if (node.has("error")) {
                             String errorMsg = node.path("error").path("message").asText();
                             throw new RuntimeException("Gemini API Error: " + errorMsg);

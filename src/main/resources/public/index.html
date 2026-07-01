@@ -28,7 +28,7 @@
             z-index: 1;
         }
 
-        /* Анимированный фон */
+        /* Animated background */
         .bg-blob {
             position: absolute;
             width: 400px;
@@ -138,12 +138,6 @@
         Operational
     </div>
 
-    <!-- Контейнер, куда JS вставит эндпоинты -->
-    <div class="endpoints-section" id="endpoints-container" style="display: none;">
-        <h2>Доступные эндпоинты</h2>
-        <div id="endpoints-list"></div>
-    </div>
-
     <div class="tech-stack">
         <span class="badge">Java 21</span>
         <span class="badge">Micronaut 4</span>
@@ -154,43 +148,5 @@
     <div>
         <h2><a href="https://lainlab.com/?lang=en" style="text-decoration: none;">Lain S.r.l.</a></h2>
     </div>
-
-    <script>
-        // Обращаемся к нашему новому безопасному JSON-эндпоинту
-        const META_URL = '/meta/endpoints';
-
-        async function loadEndpoints() {
-            try {
-                const response = await fetch(META_URL);
-                if (!response.ok) throw new Error('Meta endpoint not found');
-
-                const endpoints = await response.json();
-                const listElement = document.getElementById('endpoints-list');
-                const container = document.getElementById('endpoints-container');
-                container.style.display = 'block';
-
-                endpoints.forEach(ep => {
-                        const card = document.createElement('div');
-                        card.className = 'endpoint-card';
-
-                        const methodClass = ep.method.toLowerCase() === 'post' ? 'method-badge post' : 'method-badge';
-
-                        card.innerHTML = `
-                            <span class="${methodClass}">${ep.method.toUpperCase()}</span>
-                            <span class="endpoint-path">${ep.path}</span>
-                            <span class="endpoint-desc">${ep.description}</span>
-                        `;
-
-                        card.onclick = () => window.open(ep.path, '_blank');
-                        listElement.appendChild(card);
-                });
-
-            } catch (error) {
-                console.log('Endpoints list not loaded:', error.message);
-            }
-        }
-
-        loadEndpoints();
-    </script>
 </body>
 </html>

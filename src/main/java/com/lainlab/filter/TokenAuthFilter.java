@@ -8,10 +8,10 @@ import io.micronaut.http.annotation.RequestFilter;
 import io.micronaut.http.annotation.ServerFilter;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton; // КРИТИЧЕСКИ ВАЖНЫЙ ИМПОРТ
+import jakarta.inject.Singleton;
 import java.util.Optional;
 
-@Singleton // <- ОБЯЗАТЕЛЬНО: без этого Micronaut 4 не создаст бин фильтра!
+@Singleton // Required for Micronaut 4 to register the filter bean
 @ServerFilter("/api/**")
 public class TokenAuthFilter {
 

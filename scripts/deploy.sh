@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ручной деплой на VPS (альтернатива GitHub Actions)
+# Manual VPS deploy (alternative to GitHub Actions)
 set -e
 
 VPS_HOST="${VPS_HOST:?Set VPS_HOST}"

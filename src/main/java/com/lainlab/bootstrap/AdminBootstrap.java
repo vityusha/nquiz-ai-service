@@ -19,13 +19,13 @@ public class AdminBootstrap implements ApplicationEventListener<ServerStartupEve
     @Override
     public void onApplicationEvent(ServerStartupEvent event) {
 
-        // Проверяем, есть ли хотя бы один админ
+        // Check whether at least one admin already exists
         long adminCount = tokens.countAdmins();
         if (adminCount > 0) {
             return;
         }
 
-        // Генерируем токен
+        // Generate the token
         String tokenValue = TokenAdminController.generateApiKey(true);
 
         Token admin = new Token();
