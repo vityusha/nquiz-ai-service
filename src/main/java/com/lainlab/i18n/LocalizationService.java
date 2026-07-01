@@ -23,7 +23,7 @@ public class LocalizationService {
     private void load(String lang) {
         try (InputStream is = getClass().getResourceAsStream("/i18n/messages_" + lang + ".properties")) {
             Properties p = new Properties();
-            p.load(new InputStreamReader(is, StandardCharsets.UTF_8)); // ← ВАЖНО!
+            p.load(new InputStreamReader(is, StandardCharsets.UTF_8)); // UTF-8 is required
             bundles.put(lang, p);
         } catch (Exception e) {
             throw new RuntimeException("Cannot load i18n for lang=" + lang, e);

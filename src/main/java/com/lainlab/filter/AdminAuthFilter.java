@@ -8,10 +8,10 @@ import io.micronaut.http.annotation.RequestFilter;
 import io.micronaut.http.annotation.ServerFilter;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton; // КРИТИЧЕСКИ ВАЖНЫЙ ИМПОРТ
+import jakarta.inject.Singleton;
 import java.util.Optional;
 
-@Singleton // <- ОБЯЗАТЕЛЬНО: регистрирует класс в DI-контексте
+@Singleton // Required to register the class in the DI context
 @ServerFilter("/admin/**")
 public class AdminAuthFilter {
 

@@ -19,7 +19,7 @@ public class PaymentService {
     private final ObjectMapper mapper = new ObjectMapper();
 
     // -----------------------------
-    // Ручное пополнение
+    // Manual top-up
     // -----------------------------
     public Token topUp(Token token, int amount) {
         token.setBalance(token.getBalance() + amount);
@@ -32,8 +32,7 @@ public class PaymentService {
     }
 
     // -----------------------------
-    // Автоматическое пополнение
-    // через вебхук Stripe / ЮKassa
+    // Automatic top-up via Stripe / YooKassa webhook
     // -----------------------------
     public void handleWebhook(String rawJson) {
         try {

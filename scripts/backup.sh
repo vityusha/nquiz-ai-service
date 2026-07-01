@@ -1,5 +1,5 @@
 #!/bin/bash
-# Запускать через cron на VPS:
+# Run via cron on the VPS:
 # 0 3 * * * /opt/myapp/scripts/backup.sh
 
 set -e

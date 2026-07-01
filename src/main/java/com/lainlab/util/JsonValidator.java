@@ -14,7 +14,7 @@ public class JsonValidator {
     public static List<String> validateQuestionsArray(JsonNode root, Mode mode) {
         List<String> errors = new ArrayList<>();
 
-        // 1. Корневой объект должен содержать "questions"
+        // 1. Root object must contain "questions"
         if (!root.has("questions")) {
             errors.add("Root JSON must contain field 'questions'");
             return errors;
@@ -22,19 +22,19 @@ public class JsonValidator {
 
         JsonNode arr = root.get("questions");
 
-        // 2. "questions" должен быть массивом
+        // 2. "questions" must be an array
         if (!arr.isArray()) {
             errors.add("'questions' must be an array");
             return errors;
         }
 
-        // 3. Массив не должен быть пустым
+        // 3. Array must not be empty
         if (arr.size() == 0) {
             errors.add("'questions' array must not be empty");
             return errors;
         }
 
-        // 4. Проверяем каждый вопрос
+        // 4. Validate each question
         for (int i = 0; i < arr.size(); i++) {
             JsonNode q = arr.get(i);
             switch (mode) {

@@ -30,7 +30,7 @@ public class TokenAdminController {
                                        HttpRequest<?> httpRequest) {
         LOG.info("Creating new user token for license: {}, org: {}", req.getLicenseNo(), req.getLicenseOrg());
 
-        // Проверка admin-токена
+        // Verify admin token
         Token admin = httpRequest.getAttribute("token", Token.class)
                 .orElseThrow(() -> new RuntimeException("Missing admin token"));
 
@@ -192,7 +192,7 @@ public class TokenAdminController {
         Token token = tokens.findByToken(tokenValue)
                 .orElseThrow(() -> new RuntimeException("Token not found"));
 
-        // Проверка admin-токена (фильтр уже сделал, но продублируем)
+        // Verify admin token (filter already checked; duplicated for safety)
         Token admin = httpRequest.getAttribute("token", Token.class)
                 .orElseThrow(() -> new RuntimeException("Missing admin token"));
 
@@ -217,7 +217,7 @@ public class TokenAdminController {
         Token token = tokens.findByLicenseNo(licenseNo)
                 .orElseThrow(() -> new RuntimeException("Token with specified license No not found"));
 
-        // Проверка admin-токена (фильтр уже сделал, но продублируем)
+        // Verify admin token (filter already checked; duplicated for safety)
         Token admin = httpRequest.getAttribute("token", Token.class)
                 .orElseThrow(() -> new RuntimeException("Missing admin token"));
 

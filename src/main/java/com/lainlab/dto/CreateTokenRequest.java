@@ -18,7 +18,7 @@ public class CreateTokenRequest {
     private int balance;
     private boolean admin;
 
-    // Конструктор по умолчанию для десериализации
+    // Default constructor for deserialization
     public CreateTokenRequest() {}
 
     public CreateTokenRequest(int licenseNo, String licenseOrg, String email, int balance, boolean admin) {
