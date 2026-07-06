@@ -7,7 +7,6 @@ import io.micronaut.serde.annotation.Serdeable;
 import java.util.List;
 
 @Serdeable
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class QuestionResponse {
     private Mode mode;
     private String question;
@@ -67,7 +66,6 @@ public class QuestionResponse {
     }
 
     @Serdeable
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Answer {
         private String answer;
         private boolean right;

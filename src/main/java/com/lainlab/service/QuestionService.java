@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.lainlab.db.AiResponseLog;
+import com.lainlab.db.AiResponseLogRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import com.lainlab.dto.*;
@@ -18,7 +20,6 @@ import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
-import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
@@ -26,12 +27,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Singleton
 public class QuestionService {
     @Inject
     TokenRepository tokenRepository;
+
+    @Inject
+    AiResponseLogRepository aiResponseLogRepository;
 
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(QuestionService.class);
@@ -159,8 +164,11 @@ public class QuestionService {
                             .add(key);
 
                     chargeBalance(httpRequest, req);
-                    LOG.info("Successfully generated and returned {} questions for IP: {}", response.getQuestions().size(), ip);
 
+                    // Save log entry
+                    saveLogEntry(httpRequest, ip, req, response);
+
+                    LOG.info("Successfully generated and returned {} questions for IP: {}", response.getQuestions().size(), ip);
                     return response;
                 }
         );
@@ -290,5 +298,24 @@ public class QuestionService {
 
         LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
                  count, token.getId(), token.getBalance(), token.getTotal());
+    }
+
+    private void saveLogEntry(HttpRequest<?> request, String ip, QuestionRequest req, QuestionResponseList response) {
+        if(request == null)
+            return;
+
+        Token token = request.getAttribute("token", Token.class)
+            .orElseThrow(() -> new IllegalStateException("Token missing in request"));
+
+        AiResponseLog logEntry = new AiResponseLog();
+        logEntry.setTokenId(token.getId());
+        logEntry.setIpAddress(ip);
+        logEntry.setRequest(req);
+        logEntry.setResponse(response);
+        // Ensure NOT NULL sorting/queries are consistent even if Micronaut inserts NULLs.
+        logEntry.setCreatedAt(Instant.now());
+        aiResponseLogRepository.save(logEntry);
+
+        LOG.debug("Log entry was successfully created for: {}",token.getId());
     }
 }

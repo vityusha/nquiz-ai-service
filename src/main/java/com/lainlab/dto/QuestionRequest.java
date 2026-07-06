@@ -9,7 +9,6 @@ import com.lainlab.model.Provider;
 import io.micronaut.serde.annotation.Serdeable;
 
 @Serdeable
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class QuestionRequest {
     public static final int MAX_QUESTIONS_COUNT = 10;
 

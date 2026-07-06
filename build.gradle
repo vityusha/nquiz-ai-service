@@ -89,6 +89,17 @@ micronaut {
     }
 }
 
+shadowJar {
+    mergeServiceFiles()
+
+    exclude 'META-INF/LICENSE*'
+    exclude 'META-INF/NOTICE*'
+
+    exclude 'META-INF/io.netty.versions.properties'
+    exclude 'META-INF/config-properties.adoc'
+    exclude 'META-INF/spring-configuration-metadata.json'
+}
+
 test {
     useJUnitPlatform()
     finalizedBy jacocoTestReport
