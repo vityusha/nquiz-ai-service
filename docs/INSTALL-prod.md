@@ -40,7 +40,7 @@ services:
   app:
     image: ghcr.io/YOUR_GITHUB_USERNAME/nquiz-ai-service:latest
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./data:/var/lib/nquiz-ai-service/data
       - ./config:/nquiz-ai-service/config:ro
