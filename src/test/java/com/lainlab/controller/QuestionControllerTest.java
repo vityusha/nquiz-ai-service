@@ -1,22 +1,34 @@
 package com.lainlab.controller;
 
+import com.lainlab.db.QuestionRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import com.lainlab.dto.QuestionRequest;
+import com.lainlab.dto.QuestionResponse;
+import com.lainlab.dto.QuestionResponseList;
+import com.lainlab.filter.RateLimitFilter;
 import com.lainlab.model.*;
+import io.micronaut.context.annotation.Replaces;
+import io.micronaut.core.order.Ordered;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.RequestFilter;
+import io.micronaut.http.annotation.ServerFilter;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,12 +40,28 @@ import static org.junit.jupiter.api.Assertions.*;
 @DisplayName("QuestionController Integration Tests")
 class QuestionControllerTest {
 
+    @Singleton
+    @Replaces(RateLimitFilter.class)
+    @ServerFilter("/api/**")
+    static class NoopRateLimitFilter implements Ordered {
+        @RequestFilter
+        public void doFilter(HttpRequest<?> request) {
+        }
+        @Override
+        public int getOrder() {
+            return Ordered.HIGHEST_PRECEDENCE;
+        }
+    }
+
     @Inject
     @Client("/")
     HttpClient client;
 
     @Inject
     TokenRepository tokenRepository;
+
+    @Inject
+    QuestionRepository questionRepository;
 
     private Token userToken;
     private Token inactiveToken;
@@ -88,7 +116,7 @@ class QuestionControllerTest {
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", request),
+                HttpRequest.POST("/api/questions/generate", request),
                 String.class
             );
         });
@@ -104,7 +132,7 @@ class QuestionControllerTest {
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", request)
+                HttpRequest.POST("/api/questions/generate", request)
                     .bearerAuth("invalid_token_xyz"),
                 String.class
             );
@@ -121,7 +149,7 @@ class QuestionControllerTest {
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                    HttpRequest.POST("/api/questions", request)
+                    HttpRequest.POST("/api/questions/generate", request)
                             .bearerAuth(inactiveToken.getToken()),
                     String.class
             );
@@ -139,7 +167,7 @@ class QuestionControllerTest {
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                    HttpRequest.POST("/api/questions", request)
+                    HttpRequest.POST("/api/questions/generate", request)
                             .bearerAuth(userToken.getToken()),
                     String.class
             );
@@ -157,7 +185,7 @@ class QuestionControllerTest {
 
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", request)
+                HttpRequest.POST("/api/questions/generate", request)
                     .bearerAuth(userToken.getToken()),
                 String.class
             );
@@ -225,6 +253,206 @@ class QuestionControllerTest {
         String extracted = bearerToken.substring("Bearer ".length()).trim();
 
         assertEquals("nq_user_test_token", extracted, "Should extract token from Bearer prefix");
+    }
+
+    // ──────────────────────────────────────────────
+    // /api/questions/store tests
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("POST /api/questions/store - should reject without Authorization header")
+    void testStoreQuestions_MissingAuth() {
+        QuestionResponseList body = new QuestionResponseList();
+        body.setQuestions(List.of(createSampleQuestion()));
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.POST("/api/questions/store", body),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("POST /api/questions/store - should reject with invalid token")
+    void testStoreQuestions_InvalidToken() {
+        QuestionResponseList body = new QuestionResponseList();
+        body.setQuestions(List.of(createSampleQuestion()));
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.POST("/api/questions/store", body)
+                    .bearerAuth("invalid_token_xyz"),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("POST /api/questions/store - should reject with inactive token")
+    void testStoreQuestions_InactiveToken() {
+        QuestionResponseList body = new QuestionResponseList();
+        body.setQuestions(List.of(createSampleQuestion()));
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.POST("/api/questions/store", body)
+                    .bearerAuth(inactiveToken.getToken()),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    @DisplayName("POST /api/questions/store - should store questions with valid token")
+    void testStoreQuestions_Success() {
+        QuestionResponseList body = new QuestionResponseList();
+        body.setQuestions(List.of(
+            createSampleQuestion("What is the capital of France?"),
+            createSampleQuestion("What is the largest ocean?")
+        ));
+
+        HttpResponse<Map> response = client.toBlocking().exchange(
+            HttpRequest.POST("/api/questions/store", body)
+                .bearerAuth(userToken.getToken()),
+            Map.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        Map result = response.body();
+        assertNotNull(result);
+        assertEquals("saved", result.get("status"));
+        assertEquals(2, result.get("count"));
+    }
+
+    @Test
+    @DisplayName("POST /api/questions/store - should reject malformed JSON body")
+    void testStoreQuestions_MalformedJson() {
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.POST("/api/questions/store", "{broken json")
+                    .bearerAuth(userToken.getToken())
+                    .contentType(MediaType.APPLICATION_JSON),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("POST /api/questions/store - should reject when questions is not an array")
+    void testStoreQuestions_WrongType() {
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.POST("/api/questions/store", "{\"questions\": \"not an array\"}")
+                    .bearerAuth(userToken.getToken())
+                    .contentType(MediaType.APPLICATION_JSON),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    @DisplayName("POST /api/questions/store - should accept empty questions array")
+    void testStoreQuestions_EmptyArray() {
+        HttpResponse<Map> response = client.toBlocking().exchange(
+            HttpRequest.POST("/api/questions/store", "{\"questions\":[]}")
+                .bearerAuth(userToken.getToken())
+                .contentType(MediaType.APPLICATION_JSON),
+            Map.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        Map result = response.body();
+        assertNotNull(result);
+        assertEquals("saved", result.get("status"));
+        assertEquals(0, result.get("count"));
+    }
+
+    // ──────────────────────────────────────────────
+    // /api/questions/search tests
+    // ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("GET /api/questions/search - should reject without Authorization header")
+    void testSearchQuestions_MissingAuth() {
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT"),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return 400 when no params provided")
+    void testSearchQuestions_NoParams() {
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.GET("/api/questions/search")
+                    .bearerAuth(userToken.getToken()),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return paginated results by mode")
+    void testSearchQuestions_ByMode() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        assertTrue(response.body().contains("\"content\""));
+        assertTrue(response.body().contains("\"totalSize\""));
+    }
+
+    // ──────────────────────────────────────────────
+    // helpers
+    // ──────────────────────────────────────────────
+
+    private void seedQuestion(String json) {
+        questionRepository.insertQuestion(userToken.getId(), json);
+    }
+
+    private QuestionResponse createSampleQuestion() {
+        return createSampleQuestion("Sample question text");
+    }
+
+    private QuestionResponse createSampleQuestion(String text) {
+        QuestionResponse q = new QuestionResponse();
+        q.setQuestion(text);
+        q.setMode(Mode.ONE_CORRECT);
+        q.setDifficulty("A1");
+        q.setType("GRAMMAR");
+        q.setLanguage("ENGLISH");
+        q.setKeywords("test");
+        QuestionResponse.Answer a = new QuestionResponse.Answer();
+        a.setAnswer("Sample answer");
+        a.setRight(true);
+        q.setAnswers(List.of(a));
+        return q;
     }
 
     private QuestionRequest createTestRequest() {

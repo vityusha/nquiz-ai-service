@@ -1,22 +1,17 @@
 package com.lainlab.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import com.lainlab.dto.QuestionRequest;
-import com.lainlab.dto.QuestionResponseList;
 import com.lainlab.model.*;
-import com.lainlab.util.PromptCache;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
 

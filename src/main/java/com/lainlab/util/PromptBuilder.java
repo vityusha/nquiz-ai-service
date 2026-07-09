@@ -2,7 +2,6 @@ package com.lainlab.util;
 
 import com.lainlab.model.Mode;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class PromptBuilder {

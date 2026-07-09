@@ -1,11 +1,9 @@
 package com.lainlab.service;
 
-import com.lainlab.dto.LLMProvider;
 import com.lainlab.model.Provider;
 import io.micronaut.context.annotation.Value;
 import io.micronaut.http.client.DefaultHttpClientConfiguration;
 import io.micronaut.http.client.HttpClient;
-import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
 import java.net.MalformedURLException;

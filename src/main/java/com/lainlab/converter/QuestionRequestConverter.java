@@ -13,12 +13,12 @@ public class QuestionRequestConverter implements AttributeConverter<QuestionRequ
 
     private final ObjectMapper objectMapper;
 
-    // Micronaut автоматически внедрит Serde ObjectMapper
+    // Micronaut will automatically inject Serde ObjectMapper
     public QuestionRequestConverter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
-    // Вызывается перед INSERT/UPDATE в базу
+    // Called before INSERT/UPDATE to the database
     @Override
     public String convertToPersistedValue(QuestionRequest value, ConversionContext context) {
         if (value == null) return null;
@@ -29,7 +29,7 @@ public class QuestionRequestConverter implements AttributeConverter<QuestionRequ
         }
     }
 
-    // Вызывается после SELECT из базы
+    // Called after SELECT from the database
     @Override
     public QuestionRequest convertToEntityValue(String value, ConversionContext context) {
         if (value == null || value.isEmpty()) return null;

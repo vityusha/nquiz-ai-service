@@ -1,6 +1,5 @@
 package com.lainlab.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.lainlab.model.Mode;
 import io.micronaut.serde.annotation.Serdeable;
 
@@ -13,6 +12,7 @@ public class QuestionResponse {
     private String difficulty;
     private String type;
     private String language;
+    private String keywords;
     private List<Answer> answers;
 
     // getters/setters
@@ -63,6 +63,14 @@ public class QuestionResponse {
 
     public void setMode(Mode mode) {
         this.mode = mode;
+    }
+
+    public String getKeywords() {
+        return keywords;
+    }
+
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
     }
 
     @Serdeable

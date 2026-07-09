@@ -56,6 +56,20 @@ examples:
     --admin-token sk_admin_... \\
     --license-no 100 \\
     --amount 25
+
+  python scripts/api_client.py store \\
+    --token sk_user_... \\
+    --file questions.json \\
+    --pretty
+
+  python scripts/api_client.py search \\
+    --token sk_user_... \\
+    --mode MATCHING \\
+    --difficulty B1 \\
+    --type TENSES \\
+    --language ENGLISH \\
+    --keywords "present tense" \\
+    --pretty
 """
 
 COMMAND_EXAMPLES = {
@@ -122,6 +136,24 @@ example:
     --admin-token sk_admin_... \\
     --license-no 100 \\
     --amount 25
+""",
+    "store": """
+example:
+  python scripts/api_client.py store \\
+    --token sk_user_... \\
+    --file questions.json \\
+    --pretty
+""",
+    "search": """
+example:
+  python scripts/api_client.py search \\
+    --token sk_user_... \\
+    --mode MATCHING \\
+    --difficulty B1 \\
+    --type TENSES \\
+    --language ENGLISH \\
+    --keywords "present tense" \\
+    --pretty
 """,
     "webhook": """
 example:
@@ -221,28 +253,36 @@ def cmd_token_info(args: argparse.Namespace) -> int:
 
 def cmd_questions(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
-    body = {
-        "provider": args.provider,
-        "count": args.count,
-        "mode": args.mode,
-        "language": args.language,
-        "difficulty": args.difficulty,
-        "type": args.type,
-        "keywords": args.keywords,
-    }
-    status, payload = client.request("POST", "/api/questions", token=args.token, body=body)
+    if args.json_file:
+        with open(args.json_file, encoding="utf-8") as fh:
+            body = json.load(fh)
+    else:
+        body = {
+            "provider": args.provider,
+            "count": args.count,
+            "mode": args.mode,
+            "language": args.language,
+            "difficulty": args.difficulty,
+            "type": args.type,
+            "keywords": args.keywords,
+        }
+    status, payload = client.request("POST", "/api/questions/generate", token=args.token, body=body)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_create_user(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
-    body = {
-        "license_no": args.license_no,
-        "license_org": args.license_org,
-        "email": args.email,
-        "balance": args.balance,
-        "admin": args.admin,
-    }
+    if args.json_file:
+        with open(args.json_file, encoding="utf-8") as fh:
+            body = json.load(fh)
+    else:
+        body = {
+            "license_no": args.license_no,
+            "license_org": args.license_org,
+            "email": args.email,
+            "balance": args.balance,
+            "admin": args.admin,
+        }
     status, payload = client.request(
         "POST", "/admin/tokens/create-user", token=args.admin_token, body=body
     )
@@ -251,13 +291,17 @@ def cmd_create_user(args: argparse.Namespace) -> int:
 
 def cmd_create_admin(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
-    body = {
-        "license_no": 0,
-        "license_org": "NQuiz-AI-service Admin",
-        "email": "root@localhost",
-        "balance": 0,
-        "admin": True,
-    }
+    if args.json_file:
+        with open(args.json_file, encoding="utf-8") as fh:
+            body = json.load(fh)
+    else:
+        body = {
+            "license_no": 0,
+            "license_org": "NQuiz-AI-service Admin",
+            "email": "root@localhost",
+            "balance": 0,
+            "admin": True,
+        }
     status, payload = client.request(
         "POST", "/admin/tokens/create-admin", token=args.admin_token, body=body
     )
@@ -293,30 +337,40 @@ def cmd_list_tokens(args: argparse.Namespace) -> int:
 def cmd_get_token(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
-        "GET", 
-        f"/admin/tokens/info/{args.license-no}", 
+        "GET",
+        f"/admin/tokens/info/{args.license-no}",
         token=args.admin_token)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_topup_token(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
+    if args.json_file:
+        with open(args.json_file, encoding="utf-8") as fh:
+            body = json.load(fh)
+    else:
+        body = {"amount": args.amount}
     status, payload = client.request(
         "POST",
         f"/admin/tokens/{args.token_value}/topup",
         token=args.admin_token,
-        body={"amount": args.amount},
+        body=body,
     )
     return print_response(status, payload, args.pretty)
 
 
 def cmd_topup_license(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
+    if args.json_file:
+        with open(args.json_file, encoding="utf-8") as fh:
+            body = json.load(fh)
+    else:
+        body = {"amount": args.amount}
     status, payload = client.request(
         "POST",
         f"/admin/tokens/{args.license_no}/topup",
         token=args.admin_token,
-        body={"amount": args.amount},
+        body=body,
     )
     return print_response(status, payload, args.pretty)
 
@@ -332,6 +386,37 @@ def cmd_webhook(args: argparse.Namespace) -> int:
         return 2
 
     status, payload = client.request("POST", "/admin/tokens/webhook", raw_body=raw)
+    return print_response(status, payload, args.pretty)
+
+
+def cmd_store(args: argparse.Namespace) -> int:
+    client = ApiClient(args.base_url, args.timeout)
+    raw = args.json
+    if args.file:
+        with open(args.file, encoding="utf-8") as fh:
+            raw = fh.read()
+    if raw is None:
+        print("Provide --json or --file", file=sys.stderr)
+        return 2
+
+    status, payload = client.request("POST", "/api/questions/store", token=args.token, raw_body=raw)
+    return print_response(status, payload, args.pretty)
+
+
+def cmd_search(args: argparse.Namespace) -> int:
+    client = ApiClient(args.base_url, args.timeout)
+    query = {}
+    if args.mode:
+        query["mode"] = args.mode
+    if args.difficulty:
+        query["difficulty"] = args.difficulty
+    if args.type:
+        query["type"] = args.type
+    if args.language:
+        query["language"] = args.language
+    if args.keywords:
+        query["keywords"] = args.keywords
+    status, payload = client.request("GET", "/api/questions/search", token=args.token, query=query)
     return print_response(status, payload, args.pretty)
 
 
@@ -363,7 +448,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--token", required=True, help="User API token (Bearer)")
     p.set_defaults(handler=cmd_token_info)
 
-    p = add_subparser(sub, "questions", "POST /api/questions")
+    p = add_subparser(sub, "questions", "POST /api/questions/generate")
     p.add_argument("--token", required=True, help="User API token (Bearer)")
     p.add_argument("--provider", required=True, choices=PROVIDERS)
     p.add_argument("--count", type=int, default=1)
@@ -372,6 +457,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--difficulty", default="B1", choices=DIFFICULTIES)
     p.add_argument("--type", default="GRAMMAR", choices=QUESTION_TYPES)
     p.add_argument("--keywords", default="", help="Comma-separated topic keywords")
+    p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_questions)
 
     p = add_subparser(sub, "create-user", "POST /admin/tokens/create-user")
@@ -381,10 +467,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--email", required=True)
     p.add_argument("--balance", type=int, default=0)
     p.add_argument("--admin", action="store_true", help="Create admin-capable user token")
+    p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_create_user)
 
     p = add_subparser(sub, "create-admin", "POST /admin/tokens/create-admin")
     p.add_argument("--admin-token", required=True)
+    p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_create_admin)
 
     p = add_subparser(sub, "deactivate", "POST /admin/tokens/deactivate/{license_no}")
@@ -410,13 +498,30 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--admin-token", required=True)
     p.add_argument("--token-value", required=True, help="Full user token string")
     p.add_argument("--amount", type=int, required=True)
+    p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_topup_token)
 
     p = add_subparser(sub, "topup-license", "POST /admin/tokens/{license_no}/topup")
     p.add_argument("--admin-token", required=True)
     p.add_argument("--license-no", type=int, required=True)
     p.add_argument("--amount", type=int, required=True)
+    p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_topup_license)
+
+    p = add_subparser(sub, "store", "POST /api/questions/store")
+    p.add_argument("--token", required=True, help="User API token (Bearer)")
+    p.add_argument("--json", help="Raw JSON string with questions array")
+    p.add_argument("--file", help="Path to JSON file with questions payload")
+    p.set_defaults(handler=cmd_store)
+
+    p = add_subparser(sub, "search", "GET /api/questions/search")
+    p.add_argument("--token", required=True, help="User API token (Bearer)")
+    p.add_argument("--mode", choices=MODES, help="Filter by answer mode")
+    p.add_argument("--difficulty", choices=DIFFICULTIES, help="Filter by difficulty level")
+    p.add_argument("--type", choices=QUESTION_TYPES, help="Filter by question type")
+    p.add_argument("--language", help="Filter by language")
+    p.add_argument("--keywords", help="Filter by keywords")
+    p.set_defaults(handler=cmd_search)
 
     p = add_subparser(sub, "webhook", "POST /admin/tokens/webhook")
     p.add_argument("--json", help="Raw webhook JSON string")

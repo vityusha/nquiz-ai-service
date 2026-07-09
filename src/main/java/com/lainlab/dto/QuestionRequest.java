@@ -1,6 +1,5 @@
 package com.lainlab.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.lainlab.model.Mode;
 import com.lainlab.model.Difficulty;
 import com.lainlab.model.Language;

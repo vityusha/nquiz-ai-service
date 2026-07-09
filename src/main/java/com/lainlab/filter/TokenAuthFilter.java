@@ -20,6 +20,11 @@ public class TokenAuthFilter {
 
     @RequestFilter
     public void doFilter(HttpRequest<?> request) {
+        // Allow unauthenticated access to capabilities endpoints (some deployments use different spelling)
+        String path = request.getUri().getPath();
+        if ("/api/capabilities".equals(path)) {
+            return;
+        }
         String auth = request.getHeaders().get("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) {
             throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Missing Authorization header!");

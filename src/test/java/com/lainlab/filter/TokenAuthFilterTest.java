@@ -3,7 +3,6 @@ package com.lainlab.filter;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import io.micronaut.http.HttpRequest;
-import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
@@ -96,7 +95,7 @@ class TokenAuthFilterTest {
     void testMissingAuthorizationHeader() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", "{}"),
+                HttpRequest.POST("/api/questions/generate", "{}"),
                 String.class
             );
         });
@@ -111,7 +110,7 @@ class TokenAuthFilterTest {
     void testMalformedAuthorizationHeader() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", "{}")
+                HttpRequest.POST("/api/questions/generate", "{}")
                     .header("Authorization", "Basic invalid"),
                 String.class
             );
@@ -125,7 +124,7 @@ class TokenAuthFilterTest {
     void testInvalidToken() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", "{}")
+                HttpRequest.POST("/api/questions/generate", "{}")
                     .bearerAuth("nq_user_nonexistent_token_xyz"),
                 String.class
             );
@@ -139,7 +138,7 @@ class TokenAuthFilterTest {
     void testInactiveTokenRejection() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", "{}")
+                HttpRequest.POST("/api/questions/generate", "{}")
                     .bearerAuth(inactiveToken.getToken()),
                 String.class
             );
@@ -153,7 +152,7 @@ class TokenAuthFilterTest {
     void testZeroBalanceRejection() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.POST("/api/questions", "{}")
+                HttpRequest.POST("/api/questions/generate", "{}")
                     .bearerAuth(emptyBalanceToken.getToken()),
                 String.class
             );
