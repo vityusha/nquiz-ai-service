@@ -18,6 +18,7 @@ public class LocalizationService {
     public LocalizationService() {
         load("en");
         load("ru");
+        load("it");
     }
 
     private void load(String lang) {

@@ -89,8 +89,8 @@ public class CapabilitiesController {
 
     /**
      * Priority:
-     * 1) ?lang=ru|en
-     * 2) Accept-Language header
+     * 1) ?lang=... (any language tag)
+     * 2) Accept-Language header (any supported language)
      * 3) fallback = en
      */
     private Locale resolveLocale(String lang, HttpHeaders headers) {
@@ -98,15 +98,10 @@ public class CapabilitiesController {
         // 1) Query parameter overrides everything
         if (lang != null && !lang.isBlank()) {
             LOG.debug("Resolving locale from query parameter: {}", lang);
-            if (lang.equalsIgnoreCase("ru")) {
-                LOG.debug("Resolved locale from query param: ru");
-                return Locale.of("ru");
-            }
-            LOG.debug("Resolved locale from query param: en (default)");
-            return Locale.ENGLISH;
+            return Locale.of(lang.toLowerCase());
         }
 
-        // 2) Accept-Language
+        // 2) Accept-Language — accept any language tag
         Optional<Locale> headerLocale = headers.findFirst(HttpHeaders.ACCEPT_LANGUAGE)
                 .map(headerValue -> {
                     LOG.debug("Accept-Language header found: {}", headerValue);
@@ -114,19 +109,13 @@ public class CapabilitiesController {
                 })
                 .flatMap(ranges -> ranges.stream()
                         .map(range -> Locale.forLanguageTag(range.getRange()))
-                        .filter(l -> l.getLanguage().equals("ru") || l.getLanguage().equals("en"))
                         .findFirst()
                 );
 
         if (headerLocale.isPresent()) {
             Locale l = headerLocale.get();
-            LOG.debug("Resolving locale from Accept-Language header");
-            if (l.getLanguage().equals("ru")) {
-                LOG.debug("Resolved locale from header: ru");
-                return Locale.of("ru");
-            }
-            LOG.debug("Resolved locale from header: en");
-            return Locale.ENGLISH;
+            LOG.debug("Resolved locale from Accept-Language header: {}", l.getLanguage());
+            return l;
         }
 
         // 3) Default fallback
