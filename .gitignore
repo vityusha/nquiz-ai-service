@@ -1,4 +1,5 @@
 # Build artifacts
+bin/
 build/
 .gradle/
 out/
@@ -14,6 +15,7 @@ out/
 # Secrets — never commit
 .env
 .env.local
+.env.remote
 config/application-prod.yml
 .ssh/
 

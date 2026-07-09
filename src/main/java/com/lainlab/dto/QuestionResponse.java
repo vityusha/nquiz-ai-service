@@ -1,19 +1,18 @@
 package com.lainlab.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.lainlab.model.Mode;
 import io.micronaut.serde.annotation.Serdeable;
 
 import java.util.List;
 
 @Serdeable
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class QuestionResponse {
     private Mode mode;
     private String question;
     private String difficulty;
     private String type;
     private String language;
+    private String keywords;
     private List<Answer> answers;
 
     // getters/setters
@@ -66,8 +65,15 @@ public class QuestionResponse {
         this.mode = mode;
     }
 
+    public String getKeywords() {
+        return keywords;
+    }
+
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
+    }
+
     @Serdeable
-    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Answer {
         private String answer;
         private boolean right;

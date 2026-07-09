@@ -3,6 +3,17 @@ micronaut:
     name: nquiz-ai-service
   server:
     port: 8080
+  security:
+    intercept-url-map:
+      - pattern: /api/capabilities
+        access:
+          - isAnonymous()
+      - pattern: /search
+        access:
+          - isAnonymous()
+      - pattern: /search/**
+        access:
+          - isAnonymous()
 
 datasources:
   default:
@@ -21,3 +32,4 @@ endpoints:
     enabled: true
     sensitive: false
     details-visible: ANONYMOUS
+

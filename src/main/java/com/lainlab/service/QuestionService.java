@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.lainlab.db.Token;
-import com.lainlab.db.TokenRepository;
+import com.lainlab.db.*;
 import com.lainlab.dto.*;
 import com.lainlab.model.Mode;
 import com.lainlab.model.Provider;
@@ -16,9 +15,10 @@ import com.lainlab.util.PromptBuilder;
 import com.lainlab.util.PromptCache;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
+import io.micronaut.http.annotation.Body;
 import io.micronaut.http.exceptions.HttpStatusException;
-import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @Singleton
@@ -33,9 +34,15 @@ public class QuestionService {
     @Inject
     TokenRepository tokenRepository;
 
+    @Inject
+    AiResponseLogRepository aiResponseLogRepository;
+
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(QuestionService.class);
+
+    // Mapper
     private final ObjectMapper mapper = new ObjectMapper();
+
     // Cache
     public final Cache<String, QuestionResponseList> cache =
             Caffeine.newBuilder()
@@ -159,8 +166,11 @@ public class QuestionService {
                             .add(key);
 
                     chargeBalance(httpRequest, req);
-                    LOG.info("Successfully generated and returned {} questions for IP: {}", response.getQuestions().size(), ip);
 
+                    // Save log entry
+                    saveLogEntry(httpRequest, ip, req, response);
+
+                    LOG.info("Successfully generated and returned {} questions for IP: {}", response.getQuestions().size(), ip);
                     return response;
                 }
         );
@@ -290,5 +300,68 @@ public class QuestionService {
 
         LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
                  count, token.getId(), token.getBalance(), token.getTotal());
+    }
+
+    private void saveLogEntry(HttpRequest<?> request, String ip, QuestionRequest req, QuestionResponseList response) {
+        if(request == null)
+            return;
+
+        Token token = request.getAttribute("token", Token.class)
+            .orElseThrow(() -> new IllegalStateException("Token missing in request"));
+
+        AiResponseLog logEntry = new AiResponseLog();
+        logEntry.setTokenId(token.getId());
+        logEntry.setIpAddress(ip);
+        logEntry.setRequest(req);
+        logEntry.setResponse(response);
+        // Ensure NOT NULL sorting/queries are consistent even if Micronaut inserts NULLs.
+        logEntry.setCreatedAt(Instant.now());
+        aiResponseLogRepository.save(logEntry);
+
+        LOG.debug("Log entry was successfully created for: {}",token.getId());
+    }
+
+    /*
+    User questions database
+     */
+    @Inject
+    private QuestionRepository repository;
+
+    /**
+     * POST /api/questions/store
+     * {
+     *   "questions": [
+     *     "question": "{...json...}",
+     *     ...
+     *   ]
+     * }
+     */
+    public HttpResponse<?> saveQuestion(HttpRequest<?> request, @Body QuestionResponseList body, String ip) {
+        try {
+            LOG.info("Request for storing questions from IP: {}", ip);
+
+            Optional<Token> token = request.getAttribute("token", Token.class);
+            if (token.isEmpty()) {
+                return HttpResponse.status(HttpStatus.UNAUTHORIZED).body("Invalid or missing token");
+            }
+
+            List<QuestionResponse> questions = body.getQuestions();
+            if (questions != null) {
+                for (QuestionResponse q : questions) {
+                    String questionJson = mapper.writeValueAsString(q);
+                    LOG.debug("Save new question to DB: {}", questionJson.substring(0, Math.min(200, questionJson.length())) + (questionJson.length() > 200 ? "..." : ""));
+                    repository.insertQuestion(token.get().getId(), questionJson);
+                }
+            }
+
+            return HttpResponse.ok(Map.of(
+                "status", "saved",
+                "count", questions != null ? questions.size() : 0)
+            );
+        } catch (Exception e) {
+            return HttpResponse.serverError(Map.of(
+                "error", e.getMessage()
+            ));
+        }
     }
 }

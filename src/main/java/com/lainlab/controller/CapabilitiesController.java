@@ -23,7 +23,7 @@ public class CapabilitiesController {
 
     @Get
     public CapabilitiesResponse getCapabilities(
-            @QueryValue() String lang,
+            @QueryValue(defaultValue = "en") String lang,
             HttpHeaders headers
     ) {
         LOG.info("Capabilities request received, lang param: {}", lang != null && !lang.isEmpty() ? lang : "not specified");

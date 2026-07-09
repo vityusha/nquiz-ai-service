@@ -13,7 +13,7 @@ Micronaut service that generates quiz questions with LLM providers for Nibelung 
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/questions` | Bearer token | Generate questions |
+| `POST` | `/api/questions/generate` | Bearer token | Generate questions |
 | `GET` | `/api/token/info` | Bearer token | Token balance and metadata |
 | `POST` | `/admin/tokens/create-user` | Admin Bearer token | Create user token |
 | `GET` | `/health` | None | Health check |

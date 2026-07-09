@@ -1,6 +1,5 @@
 package com.lainlab.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.lainlab.model.Mode;
 import com.lainlab.model.Difficulty;
 import com.lainlab.model.Language;
@@ -9,7 +8,6 @@ import com.lainlab.model.Provider;
 import io.micronaut.serde.annotation.Serdeable;
 
 @Serdeable
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class QuestionRequest {
     public static final int MAX_QUESTIONS_COUNT = 10;
 

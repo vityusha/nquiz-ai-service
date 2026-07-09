@@ -1,7 +1,6 @@
 package com.lainlab;
 
 import com.lainlab.controller.TokenAdminController;
-import com.lainlab.service.QuestionService;
 import io.micronaut.runtime.Micronaut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
