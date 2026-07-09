@@ -8,7 +8,10 @@ micronaut:
       - pattern: /api/capabilities
         access:
           - isAnonymous()
-      - pattern: /search.html
+      - pattern: /search
+        access:
+          - isAnonymous()
+      - pattern: /search/**
         access:
           - isAnonymous()
 

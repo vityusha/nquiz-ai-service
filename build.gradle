@@ -22,6 +22,10 @@ dependencies {
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-management")
 
+    // Template engine
+    implementation("io.micronaut.views:micronaut-views-pebble")
+    implementation('io.pebbletemplates:pebble:3.2.4')
+
     // --- Serialization (Only Serde in Micronaut 4) ---
     implementation("io.micronaut.serde:micronaut-serde-jackson")
 

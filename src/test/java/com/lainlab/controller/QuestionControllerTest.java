@@ -69,7 +69,8 @@ class QuestionControllerTest {
 
     @BeforeEach
     void setUp() {
-        // Clean up previous tokens
+        // Clean up previous questions and tokens
+        questionRepository.deleteAll();
         tokenRepository.deleteAll();
 
         // Create test user token
@@ -426,6 +427,155 @@ class QuestionControllerTest {
         assertNotNull(response.body());
         assertTrue(response.body().contains("\"content\""));
         assertTrue(response.body().contains("\"totalSize\""));
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return results by difficulty")
+    void testSearchQuestions_ByDifficulty() {
+        seedQuestion("{\"mode\":\"MULTI_CORRECT\",\"difficulty\":\"B1\",\"type\":\"VOCABULARY\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?difficulty=B1")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        assertTrue(response.body().contains("\"content\""));
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return results by type")
+    void testSearchQuestions_ByType() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"A1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?type=GRAMMAR")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        assertTrue(response.body().contains("\"content\""));
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return results by language")
+    void testSearchQuestions_ByLanguage() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"A2\",\"type\":\"READING\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?language=ENGLISH")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        assertTrue(response.body().contains("\"content\""));
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return results by keywords")
+    void testSearchQuestions_ByKeywords() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"C1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"present tense\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?keywords=present")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        assertTrue(response.body().contains("\"content\""));
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should reject with inactive token")
+    void testSearchQuestions_InactiveToken() {
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT")
+                    .bearerAuth(inactiveToken.getToken()),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return empty results when mode has no matches")
+    void testSearchQuestions_ByMode_NoResults() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?mode=MATCHING")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        assertTrue(response.body().contains("\"content\":[]"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    @DisplayName("GET /api/questions/search - should support pagination with size and page")
+    void testSearchQuestions_WithPagination() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B2\",\"type\":\"VOCABULARY\",\"language\":\"ENGLISH\",\"keywords\":\"test2\"}");
+
+        HttpResponse<Map> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT&size=1&page=0")
+                .bearerAuth(userToken.getToken()),
+            Map.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        Map body = response.body();
+        assertNotNull(body);
+        assertTrue(body.containsKey("content"));
+        assertTrue(body.containsKey("totalSize"));
+        assertEquals(2, ((Number) body.get("totalSize")).intValue());
+        assertEquals(1, ((java.util.Collection<?>) body.get("content")).size());
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - should return 400 when only empty params provided")
+    void testSearchQuestions_EmptyStringParams() {
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
+            client.toBlocking().exchange(
+                HttpRequest.GET("/api/questions/search?mode=&difficulty=")
+                    .bearerAuth(userToken.getToken()),
+                String.class
+            );
+        });
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/search - first non-empty param wins (cascading filter)")
+    void testSearchQuestions_CascadingFilter_ModeTakesPriority() {
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"C2\",\"type\":\"LISTENING\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+        seedQuestion("{\"mode\":\"MATCHING\",\"difficulty\":\"C2\",\"type\":\"LISTENING\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT&difficulty=C2&type=LISTENING")
+                .bearerAuth(userToken.getToken()),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.body());
+        // Should only return ONE_CORRECT (cascading: mode wins), not both
+        assertTrue(response.body().contains("ONE_CORRECT"));
+        assertTrue(response.body().contains("\"totalSize\":1"));
     }
 
     // ──────────────────────────────────────────────
