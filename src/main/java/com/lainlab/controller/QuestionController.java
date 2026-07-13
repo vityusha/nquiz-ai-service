@@ -55,10 +55,10 @@ public class QuestionController {
     }
 
     /**
-     * GET /api/questions/search?mode=MATCHING&difficulty=B1&type=TENSES&language=ENGLISH&keywords=summer
+     * GET /api/questions/get?mode=MATCHING&difficulty=B1&type=TENSES&language=ENGLISH&keywords=summer
      */
-    @Get("/search")
-    public HttpResponse<?> searchQuestions(
+    @Get("/get")
+    public HttpResponse<?> getQuestions(
         @QueryValue(defaultValue = "") String mode,
         @QueryValue(defaultValue = "") String difficulty,
         @QueryValue(defaultValue = "") String type,
@@ -80,7 +80,7 @@ public class QuestionController {
             result = repository.findByKeywords(keywords, pageable);
         } else {
             return HttpResponse.badRequest(Map.of(
-                "error", "No search parameters provided"
+                "error", "No get parameters provided"
             ));
         }
 

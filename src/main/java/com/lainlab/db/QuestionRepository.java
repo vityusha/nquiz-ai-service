@@ -21,7 +21,7 @@ public interface QuestionRepository extends CrudRepository<QuestionEntity, Long>
     Page<QuestionEntity> findByKeywords(String keywords, Pageable pageable);
     Page<QuestionEntity> findByTokenId(Long tokenId, Pageable pageable);
 
-    @Query("INSERT INTO questions (token_id, question) VALUES (:tokenId, :question)")
+    @Query("INSERT OR IGNORE INTO questions (token_id, question) VALUES (:tokenId, :question)")
     void insertQuestion(Long tokenId, String question);
 
     // Distinct filter values for the search page

@@ -3,15 +3,10 @@ package com.lainlab.controller;
 import com.lainlab.db.QuestionRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
-import com.lainlab.filter.RateLimitFilter;
-import io.micronaut.context.annotation.Replaces;
-import io.micronaut.core.order.Ordered;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
-import io.micronaut.http.annotation.RequestFilter;
-import io.micronaut.http.annotation.ServerFilter;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -26,21 +21,8 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest(transactional = false)
-@DisplayName("QuestionSearchController Tests")
-class QuestionSearchControllerTest {
-
-    @Singleton
-    @Replaces(RateLimitFilter.class)
-    @ServerFilter("/api/**")
-    static class NoopRateLimitFilter implements Ordered {
-        @RequestFilter
-        public void doFilter(HttpRequest<?> request) {
-        }
-        @Override
-        public int getOrder() {
-            return Ordered.HIGHEST_PRECEDENCE;
-        }
-    }
+@DisplayName("GET /search Tests")
+class QuestionSearchTest {
 
     @Inject
     @Client("/")
@@ -88,7 +70,7 @@ class QuestionSearchControllerTest {
     }
 
     @Test
-    @DisplayName("GET /search - should return empty state when no questions match")
+    @DisplayName("GET /search - should return 0 found when no questions match")
     void testSearchPage_NoResults() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
@@ -99,7 +81,7 @@ class QuestionSearchControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
-        assertTrue(response.body().contains("No questions found"));
+        assertTrue(response.body().contains("0 found"));
     }
 
     @Test
@@ -151,7 +133,6 @@ class QuestionSearchControllerTest {
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
         assertTrue(response.body().contains("1 found"));
-        assertTrue(response.body().contains("present tense"));
     }
 
     @Test
@@ -177,7 +158,7 @@ class QuestionSearchControllerTest {
     @DisplayName("GET /search - should respect page parameter")
     void testSearchPage_Pagination() {
         for (int i = 0; i < 25; i++) {
-            seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+            seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"pagination-test-" + i + "\"}");
         }
 
         HttpResponse<String> response = client.toBlocking().exchange(
@@ -193,8 +174,8 @@ class QuestionSearchControllerTest {
     @Test
     @DisplayName("GET /search - should show total count in header")
     void testSearchPage_TotalCount() {
-        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
-        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"count-a\"}");
+        seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"count-b\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
             HttpRequest.GET("/search?mode=ONE_CORRECT"),

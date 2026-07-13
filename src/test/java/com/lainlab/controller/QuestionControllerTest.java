@@ -382,15 +382,15 @@ class QuestionControllerTest {
     }
 
     // ──────────────────────────────────────────────
-    // /api/questions/search tests
+    // /api/questions/get tests
     // ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("GET /api/questions/search - should reject without Authorization header")
+    @DisplayName("GET /api/questions/get - should reject without Authorization header")
     void testSearchQuestions_MissingAuth() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT"),
+                HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT"),
                 String.class
             );
         });
@@ -399,11 +399,11 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return 400 when no params provided")
+    @DisplayName("GET /api/questions/get - should return 400 when no params provided")
     void testSearchQuestions_NoParams() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.GET("/api/questions/search")
+                HttpRequest.GET("/api/questions/get")
                     .bearerAuth(userToken.getToken()),
                 String.class
             );
@@ -413,12 +413,12 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return paginated results by mode")
+    @DisplayName("GET /api/questions/get - should return paginated results by mode")
     void testSearchQuestions_ByMode() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT")
+            HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
@@ -430,12 +430,12 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return results by difficulty")
+    @DisplayName("GET /api/questions/get - should return results by difficulty")
     void testSearchQuestions_ByDifficulty() {
         seedQuestion("{\"mode\":\"MULTI_CORRECT\",\"difficulty\":\"B1\",\"type\":\"VOCABULARY\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?difficulty=B1")
+            HttpRequest.GET("/api/questions/get?difficulty=B1")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
@@ -446,12 +446,12 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return results by type")
+    @DisplayName("GET /api/questions/get - should return results by type")
     void testSearchQuestions_ByType() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"A1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?type=GRAMMAR")
+            HttpRequest.GET("/api/questions/get?type=GRAMMAR")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
@@ -462,12 +462,12 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return results by language")
+    @DisplayName("GET /api/questions/get - should return results by language")
     void testSearchQuestions_ByLanguage() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"A2\",\"type\":\"READING\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?language=ENGLISH")
+            HttpRequest.GET("/api/questions/get?language=ENGLISH")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
@@ -478,12 +478,12 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return results by keywords")
+    @DisplayName("GET /api/questions/get - should return results by keywords")
     void testSearchQuestions_ByKeywords() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"C1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"present tense\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?keywords=present")
+            HttpRequest.GET("/api/questions/get?keywords=present")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
@@ -494,11 +494,11 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should reject with inactive token")
+    @DisplayName("GET /api/questions/get - should reject with inactive token")
     void testSearchQuestions_InactiveToken() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT")
+                HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT")
                     .bearerAuth(inactiveToken.getToken()),
                 String.class
             );
@@ -508,12 +508,12 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return empty results when mode has no matches")
+    @DisplayName("GET /api/questions/get - should return empty results when mode has no matches")
     void testSearchQuestions_ByMode_NoResults() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?mode=MATCHING")
+            HttpRequest.GET("/api/questions/get?mode=MATCHING")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
@@ -525,13 +525,13 @@ class QuestionControllerTest {
 
     @SuppressWarnings("unchecked")
     @Test
-    @DisplayName("GET /api/questions/search - should support pagination with size and page")
+    @DisplayName("GET /api/questions/get - should support pagination with size and page")
     void testSearchQuestions_WithPagination() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B1\",\"type\":\"GRAMMAR\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"B2\",\"type\":\"VOCABULARY\",\"language\":\"ENGLISH\",\"keywords\":\"test2\"}");
 
         HttpResponse<Map> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT&size=1&page=0")
+            HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT&size=1&page=0")
                 .bearerAuth(userToken.getToken()),
             Map.class
         );
@@ -546,11 +546,11 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - should return 400 when only empty params provided")
+    @DisplayName("GET /api/questions/get - should return 400 when only empty params provided")
     void testSearchQuestions_EmptyStringParams() {
         HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
             client.toBlocking().exchange(
-                HttpRequest.GET("/api/questions/search?mode=&difficulty=")
+                HttpRequest.GET("/api/questions/get?mode=&difficulty=")
                     .bearerAuth(userToken.getToken()),
                 String.class
             );
@@ -560,13 +560,13 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/search - first non-empty param wins (cascading filter)")
+    @DisplayName("GET /api/questions/get - first non-empty param wins (cascading filter)")
     void testSearchQuestions_CascadingFilter_ModeTakesPriority() {
         seedQuestion("{\"mode\":\"ONE_CORRECT\",\"difficulty\":\"C2\",\"type\":\"LISTENING\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
         seedQuestion("{\"mode\":\"MATCHING\",\"difficulty\":\"C2\",\"type\":\"LISTENING\",\"language\":\"ENGLISH\",\"keywords\":\"test\"}");
 
         HttpResponse<String> response = client.toBlocking().exchange(
-            HttpRequest.GET("/api/questions/search?mode=ONE_CORRECT&difficulty=C2&type=LISTENING")
+            HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT&difficulty=C2&type=LISTENING")
                 .bearerAuth(userToken.getToken()),
             String.class
         );
