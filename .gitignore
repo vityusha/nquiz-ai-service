@@ -5,6 +5,7 @@ build/
 out/
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
+test_output.txt
 
 # IDE
 .idea/
