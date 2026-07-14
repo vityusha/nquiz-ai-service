@@ -17,6 +17,11 @@ public class RequestLoggingFilter implements HttpServerFilter {
 
     @Override
     public Publisher<MutableHttpResponse<?>> doFilter(HttpRequest<?> request, ServerFilterChain chain) {
+        String path = request.getUri().getPath();
+        if ("/health".equals(path)) {
+            return chain.proceed(request);
+        }
+
         long start = System.currentTimeMillis();
         String method = request.getMethod().name();
         String uri = request.getUri().toString();
