@@ -52,6 +52,8 @@ examples:
 
   python scripts/api_client.py list-tokens --admin-token sk_admin_... --pretty
 
+  python scripts/api_client.py stats --admin-token sk_admin_... --pretty
+
   python scripts/api_client.py topup-license \\
     --admin-token sk_admin_... \\
     --license-no 100 \\
@@ -62,7 +64,7 @@ examples:
     --file questions.json \\
     --pretty
 
-  python scripts/api_client.py search \\
+  python scripts/api_client.py get \\
     --token sk_user_... \\
     --mode MATCHING \\
     --difficulty B1 \\
@@ -123,6 +125,10 @@ example:
 example:
   python scripts/api_client.py list-tokens --admin-token sk_admin_... --pretty
 """,
+    "stats": """
+example:
+  python scripts/api_client.py stats --admin-token sk_admin_... --pretty
+""",
     "topup-token": """
 example:
   python scripts/api_client.py topup-token \\
@@ -144,9 +150,9 @@ example:
     --file questions.json \\
     --pretty
 """,
-    "search": """
+    "get": """
 example:
-  python scripts/api_client.py search \\
+  python scripts/api_client.py get \\
     --token sk_user_... \\
     --mode MATCHING \\
     --difficulty B1 \\
@@ -334,6 +340,12 @@ def cmd_list_tokens(args: argparse.Namespace) -> int:
     return print_response(status, payload, args.pretty)
 
 
+def cmd_stats(args: argparse.Namespace) -> int:
+    client = ApiClient(args.base_url, args.timeout)
+    status, payload = client.request("GET", "/admin/tokens/stats", token=args.admin_token)
+    return print_response(status, payload, args.pretty)
+
+
 def cmd_get_token(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
@@ -403,7 +415,7 @@ def cmd_store(args: argparse.Namespace) -> int:
     return print_response(status, payload, args.pretty)
 
 
-def cmd_search(args: argparse.Namespace) -> int:
+def cmd_get(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     query = {}
     if args.mode:
@@ -416,7 +428,7 @@ def cmd_search(args: argparse.Namespace) -> int:
         query["language"] = args.language
     if args.keywords:
         query["keywords"] = args.keywords
-    status, payload = client.request("GET", "/api/questions/search", token=args.token, query=query)
+    status, payload = client.request("GET", "/api/questions/get", token=args.token, query=query)
     return print_response(status, payload, args.pretty)
 
 
@@ -489,6 +501,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--admin-token", required=True)
     p.set_defaults(handler=cmd_list_tokens)
 
+    p = add_subparser(sub, "stats", "GET /admin/tokens/stats")
+    p.add_argument("--admin-token", required=True)
+    p.set_defaults(handler=cmd_stats)
+
     p = add_subparser(sub, "get-token", "GET /admin/tokens/info/{license_no}")
     p.add_argument("--admin-token", required=True)
     p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
@@ -514,14 +530,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--file", help="Path to JSON file with questions payload")
     p.set_defaults(handler=cmd_store)
 
-    p = add_subparser(sub, "search", "GET /api/questions/search")
+    p = add_subparser(sub, "get", "GET /api/questions/get")
     p.add_argument("--token", required=True, help="User API token (Bearer)")
     p.add_argument("--mode", choices=MODES, help="Filter by answer mode")
     p.add_argument("--difficulty", choices=DIFFICULTIES, help="Filter by difficulty level")
     p.add_argument("--type", choices=QUESTION_TYPES, help="Filter by question type")
     p.add_argument("--language", help="Filter by language")
     p.add_argument("--keywords", help="Filter by keywords")
-    p.set_defaults(handler=cmd_search)
+    p.set_defaults(handler=cmd_get)
 
     p = add_subparser(sub, "webhook", "POST /admin/tokens/webhook")
     p.add_argument("--json", help="Raw webhook JSON string")

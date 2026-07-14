@@ -1,8 +1,10 @@
 package com.lainlab.controller;
 
+import com.lainlab.db.QuestionRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import com.lainlab.dto.CreateTokenRequest;
+import com.lainlab.dto.LicenseStats;
 import com.lainlab.dto.TopUpRequest;
 import com.lainlab.service.PaymentService;
 import io.micronaut.http.HttpRequest;
@@ -15,6 +17,8 @@ import org.slf4j.LoggerFactory;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Controller("/admin/tokens")
@@ -24,6 +28,9 @@ public class TokenAdminController {
 
     @Inject
     TokenRepository tokens;
+
+    @Inject
+    QuestionRepository questionRepository;
 
     @Post("/create-user")
     public HttpResponse<?> createToken(@Body CreateTokenRequest req,
@@ -136,6 +143,23 @@ public class TokenAdminController {
         Iterable<Token> allTokens = tokens.findAll();
         LOG.debug("Retrieved all tokens");
         return allTokens;
+    }
+
+    @Get("/stats")
+    public HttpResponse<?> stats() {
+        LOG.debug("Fetching token stats");
+
+        long totalActiveLicenseNo = tokens.countDistinctActiveLicenseNo();
+        long totalAiRequests = tokens.countAiRequests();
+        long totalQuestionsStored = questionRepository.count();
+        List<LicenseStats> perLicense = tokens.findLicenseStats();
+
+        return HttpResponse.ok(Map.of(
+            "totalActiveLicenseNo", totalActiveLicenseNo,
+            "totalAiRequests", totalAiRequests,
+            "totalQuestionsStored", totalQuestionsStored,
+            "licenses", perLicense
+        ));
     }
 
     @Get("/info/{license_no}")
