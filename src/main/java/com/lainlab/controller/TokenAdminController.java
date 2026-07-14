@@ -82,8 +82,6 @@ public class TokenAdminController {
     @Post("/create-admin")
     public HttpResponse<?> createAdminToken(@Body CreateTokenRequest req,
                                            HttpRequest<?> httpRequest) {
-        LOG.info("Creating new admin token");
-
         Token admin = httpRequest.getAttribute("token", Token.class)
                 .orElseThrow(() -> new RuntimeException("Missing admin token"));
 
@@ -139,16 +137,11 @@ public class TokenAdminController {
 
     @Get("/all")
     public Iterable<Token> listAllTokens() {
-        LOG.debug("Fetching all tokens");
-        Iterable<Token> allTokens = tokens.findAll();
-        LOG.debug("Retrieved all tokens");
-        return allTokens;
+        return tokens.findAll();
     }
 
     @Get("/stats")
     public HttpResponse<?> stats() {
-        LOG.debug("Fetching token stats");
-
         long totalActiveLicenseNo = tokens.countDistinctActiveLicenseNo();
         long totalAiRequests = tokens.countAiRequests();
         long totalQuestionsStored = questionRepository.count();
@@ -261,10 +254,8 @@ public class TokenAdminController {
     // -----------------------------------------
     @Post("/webhook")
     public HttpResponse<?> paymentWebhook(@Body String rawJson) {
-        LOG.info("Received payment webhook");
         try {
             paymentService.handleWebhook(rawJson);
-            LOG.info("Successfully processed payment webhook");
             return HttpResponse.ok();
         } catch (Exception e) {
             LOG.error("Error processing payment webhook", e);
