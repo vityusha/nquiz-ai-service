@@ -10,12 +10,16 @@ import io.micronaut.http.annotation.RequestFilter;
 import io.micronaut.http.annotation.ServerFilter;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 
 @Singleton
 @ServerFilter("/api/**")
 public class RateLimitFilter implements Ordered {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RateLimitFilter.class);
 
     private final Bucket bucket;
 
@@ -34,9 +38,8 @@ public class RateLimitFilter implements Ordered {
     @RequestFilter
     public void doFilter(HttpRequest<?> request) {
         if (!bucket.tryConsume(1)) {
-            // Reject the request with HTTP 429
+            LOG.warn("Rate limit exceeded for {}", request.getUri());
             throw new HttpStatusException(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded");
         }
-        // Under the limit: return normally and let the request continue
     }
 }

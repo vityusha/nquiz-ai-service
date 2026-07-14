@@ -26,10 +26,8 @@ public class CapabilitiesController {
             @QueryValue(defaultValue = "en") String lang,
             HttpHeaders headers
     ) {
-        LOG.info("Capabilities request received, lang param: {}", lang != null && !lang.isEmpty() ? lang : "not specified");
-
         Locale locale = resolveLocale(lang, headers);
-        LOG.info("Selected locale: {}", locale.toString());
+        LOG.debug("Selected locale: {}", locale.toString());
 
         List<LanguageDescription> languages = Arrays.stream(Language.values())
                 .map(t -> new LanguageDescription(
@@ -76,7 +74,6 @@ public class CapabilitiesController {
                 QuestionRequest.MAX_QUESTIONS_COUNT
         );
 
-        LOG.info("Successfully built capabilities response for locale: {}", locale);
         return response;
     }
 
