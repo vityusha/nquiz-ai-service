@@ -35,12 +35,13 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Query(
         value = "SELECT t.license_no AS license_no, t.license_org AS license_org, t.email AS email, " +
                 "t.balance AS balance, " +
+                "t.total AS total, " +
                 "COUNT(DISTINCT arl.id) AS ai_requests, COUNT(DISTINCT q.id) AS questions_stored " +
                 "FROM tokens t " +
                 "LEFT JOIN ai_response_log arl ON arl.token_id = t.id " +
                 "LEFT JOIN questions q ON q.token_id = t.id " +
                 "WHERE t.admin = 0 " +
-                "GROUP BY t.license_no, t.license_org, t.email, t.balance " +
+                "GROUP BY t.license_no, t.license_org, t.email, t.balance, t.total " +
                 "ORDER BY ai_requests DESC",
         nativeQuery = true
     )

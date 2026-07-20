@@ -9,6 +9,7 @@ public class LicenseStats {
     private String license_org;
     private String email;
     private int balance;
+    private int total;
     private long ai_requests;
     private long questions_stored;
 
@@ -45,6 +46,14 @@ public class LicenseStats {
 
     public void setBalance(int balance) {
         this.balance = balance;
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
     }
 
     public long getAi_requests() {
