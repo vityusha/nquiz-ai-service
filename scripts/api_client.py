@@ -263,6 +263,10 @@ def cmd_questions(args: argparse.Namespace) -> int:
         with open(args.json_file, encoding="utf-8") as fh:
             body = json.load(fh)
     else:
+        missing = [n for n, v in [("provider", args.provider)] if v is None]
+        if missing:
+            print(f"Missing required args: {', '.join('--' + m for m in missing)}", file=sys.stderr)
+            return 2
         body = {
             "provider": args.provider,
             "count": args.count,
@@ -282,6 +286,16 @@ def cmd_create_user(args: argparse.Namespace) -> int:
         with open(args.json_file, encoding="utf-8") as fh:
             body = json.load(fh)
     else:
+        missing = [
+            n for n, v in [
+                ("license-no", args.license_no),
+                ("license-org", args.license_org),
+                ("email", args.email),
+            ] if v is None
+        ]
+        if missing:
+            print(f"Missing required args: {', '.join('--' + m for m in missing)}", file=sys.stderr)
+            return 2
         body = {
             "license_no": args.license_no,
             "license_org": args.license_org,
@@ -361,6 +375,9 @@ def cmd_topup_token(args: argparse.Namespace) -> int:
         with open(args.json_file, encoding="utf-8") as fh:
             body = json.load(fh)
     else:
+        if args.amount is None:
+            print("Missing required arg: --amount", file=sys.stderr)
+            return 2
         body = {"amount": args.amount}
     status, payload = client.request(
         "POST",
@@ -377,6 +394,9 @@ def cmd_topup_license(args: argparse.Namespace) -> int:
         with open(args.json_file, encoding="utf-8") as fh:
             body = json.load(fh)
     else:
+        if args.amount is None:
+            print("Missing required arg: --amount", file=sys.stderr)
+            return 2
         body = {"amount": args.amount}
     status, payload = client.request(
         "POST",
@@ -462,7 +482,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = add_subparser(sub, "questions", "POST /api/questions/generate")
     p.add_argument("--token", required=True, help="User API token (Bearer)")
-    p.add_argument("--provider", required=True, choices=PROVIDERS)
+    p.add_argument("--provider", choices=PROVIDERS)
     p.add_argument("--count", type=int, default=1)
     p.add_argument("--mode", default="ONE_CORRECT", choices=MODES)
     p.add_argument("--language", default="ENGLISH")
@@ -474,9 +494,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = add_subparser(sub, "create-user", "POST /admin/tokens/create-user")
     p.add_argument("--admin-token", required=True)
-    p.add_argument("--license-no", type=int, required=True)
-    p.add_argument("--license-org", required=True)
-    p.add_argument("--email", required=True)
+    p.add_argument("--license-no", type=int)
+    p.add_argument("--license-org")
+    p.add_argument("--email")
     p.add_argument("--balance", type=int, default=0)
     p.add_argument("--admin", action="store_true", help="Create admin-capable user token")
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
@@ -513,14 +533,14 @@ def build_parser() -> argparse.ArgumentParser:
     p = add_subparser(sub, "topup-token", "POST /admin/tokens/{token}/topup")
     p.add_argument("--admin-token", required=True)
     p.add_argument("--token-value", required=True, help="Full user token string")
-    p.add_argument("--amount", type=int, required=True)
+    p.add_argument("--amount", type=int)
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_topup_token)
 
     p = add_subparser(sub, "topup-license", "POST /admin/tokens/{license_no}/topup")
     p.add_argument("--admin-token", required=True)
     p.add_argument("--license-no", type=int, required=True)
-    p.add_argument("--amount", type=int, required=True)
+    p.add_argument("--amount", type=int)
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_topup_license)
 

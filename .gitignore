@@ -6,6 +6,7 @@ out/
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 test_output.txt
+__pycache__/
 
 # IDE
 .idea/
@@ -33,3 +34,6 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Others
+scripts/*.json
