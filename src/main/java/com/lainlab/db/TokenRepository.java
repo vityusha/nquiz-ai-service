@@ -16,7 +16,10 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     Optional<Token> findByToken(String token);
     Optional<Token> findByLicenseNo(int licenseNo);
 
-    @Query("SELECT COUNT(*) FROM tokens WHERE admin = TRUE")
+    @Query("UPDATE tokens SET balance = balance - :count, total = total + :count WHERE id = :tokenId AND balance >= :count")
+    int chargeBalance(long tokenId, int count);
+
+    @Query("SELECT COUNT(*) FROM tokens WHERE admin != 0")
     long countAdmins();
 
     @Query(

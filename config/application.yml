@@ -31,5 +31,5 @@ endpoints:
   health:
     enabled: true
     sensitive: false
-    details-visible: ANONYMOUS
+    details-visible: AUTHENTICATED
 

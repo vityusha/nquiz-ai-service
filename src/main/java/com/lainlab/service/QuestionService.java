@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Singleton
 public class QuestionService {
@@ -99,7 +100,7 @@ public class QuestionService {
                 LOG.info("Cache HIT for key {} (IP {}), returning {} questions", key, ip, cached.getQuestions().size());
 
                 ipHistory.asMap()
-                        .computeIfAbsent(ip, k -> new HashSet<>())
+                        .computeIfAbsent(ip, k -> ConcurrentHashMap.newKeySet())
                         .add(key);
 
                 return Publishers.just(cached);
@@ -162,7 +163,7 @@ public class QuestionService {
                     LOG.debug("Saved {} questions to history for IP: {}", response.getQuestions().size(), ip);
 
                     ipHistory.asMap()
-                            .computeIfAbsent(ip, k -> new HashSet<>())
+                            .computeIfAbsent(ip, k -> ConcurrentHashMap.newKeySet())
                             .add(key);
 
                     chargeBalance(httpRequest, req);
@@ -242,15 +243,16 @@ public class QuestionService {
                 req.getMode() + "|" +
                 req.getLanguage() + "|" +
                 req.getDifficulty() + "|" +
-                req.getType();
+                req.getType() + "|" +
+                req.getKeywords();
         LOG.trace("Generated cache key: {}", key);
         return key;
     }
 
     private void saveQuestionForIpAndKey(String ip, String key, String question) {
         ipQuestions.asMap()
-                .computeIfAbsent(ip, k -> new HashMap<>())
-                .computeIfAbsent(key, k -> new HashSet<>())
+                .computeIfAbsent(ip, k -> new ConcurrentHashMap<>())
+                .computeIfAbsent(key, k -> ConcurrentHashMap.newKeySet())
                 .add(question);
         LOG.trace("Saved question for IP: {}, key: {}", ip, key);
     }
@@ -283,20 +285,15 @@ public class QuestionService {
                 .orElseThrow(() -> new IllegalStateException("Token missing in request"));
 
         int count = req.getCount();
-        int currentBalance = token.getBalance();
 
-        LOG.debug("Charging balance: current: {}, required: {}, token ID: {}", currentBalance, count, token.getId());
-
-        if (currentBalance < count) {
-            LOG.error("Insufficient balance: need {} questions, have {}, token ID: {}", count, currentBalance, token.getId());
-            throw new RuntimeException(
-                    "Insufficient balance: need " + count + ", have " + currentBalance
-            );
+        int updated = tokenRepository.chargeBalance(token.getId(), count);
+        if (updated == 0) {
+            LOG.error("Insufficient balance: need {} questions, token ID: {}", count, token.getId());
+            throw new RuntimeException("Insufficient balance: need " + count);
         }
 
-        token.setBalance(currentBalance - count);
+        token.setBalance(token.getBalance() - count);
         token.setTotal(token.getTotal() + count);
-        tokenRepository.update(token);
 
         LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
                  count, token.getId(), token.getBalance(), token.getTotal());

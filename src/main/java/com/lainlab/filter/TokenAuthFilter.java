@@ -42,12 +42,16 @@ public class TokenAuthFilter {
             LOG.warn("Invalid token attempt on {}", request.getUri());
             throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Invalid token!");
         }
+
+
         Token token = opt.get();
 
         if (!token.isActive()) {
             LOG.warn("Inactive token {} used on {}", token.getId(), request.getUri());
             throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Token is inactive!");
         }
+
+        request.setAttribute("token", token);
 
         if (token.isAdmin()) {
             return;
@@ -57,7 +61,5 @@ public class TokenAuthFilter {
             LOG.warn("Token {} has insufficient balance on {}", token.getId(), request.getUri());
             throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Insufficient balance!");
         }
-
-        request.setAttribute("token", token);
     }
 }
