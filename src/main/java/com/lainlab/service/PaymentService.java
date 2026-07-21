@@ -52,7 +52,7 @@ public class PaymentService {
 
             topUp(token, amount);
 
-            LOG.info("Webhook top-up: token={}, amount={}", tokenValue, amount);
+            LOG.info("Webhook top-up: token={}, amount={}", token.getId(), amount);
 
         } catch (Exception e) {
             LOG.error("Webhook error: {}", e.getMessage());

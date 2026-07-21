@@ -64,29 +64,32 @@ public class GeminiProvider implements LLMProvider {
                 json -> {
                     try {
                         JsonNode node = mapper.readTree(json);
-
-                        // Check for Gemini API errors
-                        if (node.has("error")) {
-                            String errorMsg = node.path("error").path("message").asText();
-                            throw new RuntimeException("Gemini API Error: " + errorMsg);
-                        }
-
-                        // Gemini response format:
-                        // candidates[0].content.parts[0].text
-                        String text = node.path("candidates")
-                                .get(0)
-                                .path("content")
-                                .path("parts")
-                                .get(0)
-                                .path("text")
-                                .asText();
-
-                        return new LLMResponse(text);
-
+                        return new LLMResponse(extractContent(node));
                     } catch (Exception e) {
                         LOG.error("Failed to parse Gemini response: {}", json, e);
                         throw new RuntimeException(e);
                     }
                 }
         );
-    }}
+    }
+
+    private String extractContent(JsonNode node) {
+        if (node.has("error")) {
+            String msg = node.path("error").path("message").asText("Unknown Gemini error");
+            throw new RuntimeException("Gemini API error: " + msg);
+        }
+        JsonNode candidates = node.path("candidates");
+        if (!candidates.isArray() || candidates.isEmpty()) {
+            String blockReason = node.path("promptFeedback").path("blockReason").asText(null);
+            if (blockReason != null) {
+                throw new RuntimeException("Gemini blocked prompt: " + blockReason);
+            }
+            throw new RuntimeException("Gemini returned no candidates: " + node);
+        }
+        String text = candidates.get(0).path("content").path("parts").get(0).path("text").asText("");
+        if (text.isEmpty()) {
+            throw new RuntimeException("Gemini returned empty text in candidates[0]");
+        }
+        return text;
+    }
+}

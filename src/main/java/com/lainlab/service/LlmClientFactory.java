@@ -32,7 +32,7 @@ public class LlmClientFactory {
 
     public LlmConfig getConfig(Provider provider) {
         return switch (provider) {
-            case GROQ -> new LlmConfig(groqUrl, groqModel, System.getenv("GROK_ACCESS_ID"), System.getenv("GROQ_API_KEY"));
+            case GROQ -> new LlmConfig(groqUrl, groqModel, System.getenv("GROQ_ACCESS_ID"), System.getenv("GROQ_API_KEY"));
             case OPENAI -> new LlmConfig(openaiUrl, openaiModel, System.getenv("OPENAI_ACCESS_ID"), System.getenv("OPENAI_API_KEY"));
             case GEMINI -> new LlmConfig(geminiUrl, geminiModel, System.getenv("GEMINI_ACCESS_ID"), System.getenv("GEMINI_API_KEY"));
             case DEEPSEEK -> new LlmConfig(deepseekUrl, deepseekModel, System.getenv("DEEPSEEK_ACCESS_ID"), System.getenv("DEEPSEEK_API_KEY"));
