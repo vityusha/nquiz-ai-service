@@ -38,7 +38,6 @@ No lint or typecheck tasks exist.
 ## Notable quirks
 
 - **Dialect.H2 for SQLite:** All `@JdbcRepository` use `Dialect.H2` because Micronaut Data lacks SQLite dialect support. Keep as-is.
-- **GROK_ACCESS_ID env var:** Uses `GROK_ACCESS_ID` (not `GROQ_ACCESS_ID`) for the Groq provider — a codebase typo, do not "fix" without updating all consumers.
 - **Rate limit:** Global 10 req/min bucket (`RateLimitFilter`), not per-IP or per-token.
 - **No HTTPS:** Terminated at reverse proxy (Nginx/Caddy). App serves HTTP on :8080.
 - **Admin bootstrap:** First run creates an admin token and prints it to stdout when no admin tokens exist.

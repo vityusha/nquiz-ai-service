@@ -115,7 +115,7 @@ test {
     }
 
     environment "GROQ_API_KEY", "test-groq-api-key"
-    environment "GROK_ACCESS_ID", "test-grok-access-id"
+    environment "GROQ_ACCESS_ID", "test-grok-access-id"
     environment "OPENAI_API_KEY", "test-openai-api-key"
     environment "OPENAI_ACCESS_ID", "test-openai-access-id"
     environment "GEMINI_API_KEY", "test-gemini-api-key"

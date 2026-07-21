@@ -63,13 +63,27 @@ public class DeepseekProvider implements LLMProvider {
                 json -> {
                     try {
                         JsonNode node = mapper.readTree(json);
-                        String content = node.path("choices").get(0)
-                                .path("message").path("content").asText();
-                        return new LLMResponse(content);
+                        return new LLMResponse(extractContent(node));
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }
         );
+    }
+
+    private String extractContent(JsonNode node) {
+        if (node.has("error")) {
+            String msg = node.path("error").path("message").asText("Unknown LLM error");
+            throw new RuntimeException("LLM API error: " + msg);
+        }
+        JsonNode choices = node.path("choices");
+        if (!choices.isArray() || choices.isEmpty()) {
+            throw new RuntimeException("LLM returned empty choices: " + node);
+        }
+        String content = choices.get(0).path("message").path("content").asText("");
+        if (content.isEmpty()) {
+            throw new RuntimeException("LLM returned empty content in choices[0]");
+        }
+        return content;
     }
 }
