@@ -33,6 +33,9 @@ public class GeminiProvider implements LLMProvider {
 
     @Override
     public Publisher<LLMResponse> generateReactive(LLMRequest request) {
+        if (cfg.apiKey() == null || cfg.apiKey().isBlank()) {
+            throw new IllegalStateException("API key not configured for Gemini. Set GEMINI_API_KEY.");
+        }
 
         // Build Gemini JSON
         ObjectNode root = mapper.createObjectNode();

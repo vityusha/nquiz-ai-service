@@ -26,7 +26,7 @@ public class PaymentService {
         tokens.update(token);
 
         LOG.info("Token {} topped up by {} → new balance {}",
-                token.getToken(), amount, token.getBalance());
+                token.getId(), amount, token.getBalance());
 
         return token;
     }
@@ -40,6 +40,7 @@ public class PaymentService {
 
             String tokenValue = json.path("metadata").path("token").asText();
             int amount = json.path("amount").asInt();
+            amount = Math.max(amount, 0);
 
             if (tokenValue == null || tokenValue.isBlank()) {
                 LOG.error("Webhook missing token");

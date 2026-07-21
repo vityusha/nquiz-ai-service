@@ -2,10 +2,28 @@
 # Real secrets belong in /opt/nquiz-ai-service/.env, not in this file.
 
 micronaut:
+  application:
+    name: nquiz-ai-service
   server:
-    port: 8080
+    forwarded-header-strategy: NATIVE
+
+datasources:
+  default:
+    url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db
+    driver-class-name: org.sqlite.JDBC
+
+flyway:
+  enabled: true
+  locations:
+    - classpath:db/migration
 
 logger:
   levels:
     com.lainlab: INFO
     root: WARN
+
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: AUTHENTICATED

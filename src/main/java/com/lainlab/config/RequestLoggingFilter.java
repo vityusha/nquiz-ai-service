@@ -25,13 +25,19 @@ public class RequestLoggingFilter implements HttpServerFilter {
         long start = System.currentTimeMillis();
         String method = request.getMethod().name();
         String uri = request.getUri().toString();
-        String ip = request.getAttribute("realClientIp", String.class)
-            .orElseGet(() -> request.getRemoteAddress().getAddress().getHostAddress());
+        String ip = "";
+        try {
+            ip = request.getAttribute("realClientIp", String.class)
+                .orElseGet(() -> request.getRemoteAddress().getAddress().getHostAddress());
+        } catch (Exception e) {
+            LOG.warn("Failed to get client IP: {}", e.getMessage());
+        }
 
+        final String finalIp = ip;
         return Mono.from(chain.proceed(request)).doOnNext(response -> {
             long duration = System.currentTimeMillis() - start;
             int status = response.getStatus().getCode();
-            LOG.info("{} {} {} {} {}ms", ip, method, uri, status, duration);
+            LOG.info("{} {} {} {} {}ms", finalIp, method, uri, status, duration);
         });
     }
 }

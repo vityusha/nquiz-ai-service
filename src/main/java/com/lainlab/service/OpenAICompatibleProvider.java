@@ -33,6 +33,9 @@ public class OpenAICompatibleProvider implements LLMProvider {
 
     @Override
     public Publisher<LLMResponse> generateReactive(LLMRequest request) {
+        if (cfg.apiKey() == null || cfg.apiKey().isBlank()) {
+            throw new IllegalStateException("API key not configured for OpenAI/Groq. Set OPENAI_API_KEY or GROQ_API_KEY.");
+        }
 
         ObjectNode root = mapper.createObjectNode();
         root.put("model", cfg.model());

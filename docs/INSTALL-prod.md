@@ -174,6 +174,12 @@ logger:
   levels:
     com.lainlab: INFO
     root: WARN
+
+endpoints:
+  health:
+    enabled: true
+    sensitive: false
+    details-visible: AUTHENTICATED
 ```
 
 If you have specific settings for the prod environment, name the file application-prod.yml and don't forget to add prod to the MICRONAUT_ENVIRONMENTS variable in docker-compose.yml on the server.
@@ -227,6 +233,11 @@ server {
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
                 proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        location ~ /\. {
+               deny all;
+               return 404; # or 403;
         }
 }
 ```
@@ -434,7 +445,60 @@ datasources:
     connectionProperties:
       synchronous: NORMAL
 ``` 
-#### Step 6: Run and Verify
+#### Step 6: Additional security setup (optional)
+
+Install fail2ban
+
+```bash
+sudo apt install fail2ban -y
+```
+
+Create fail2ban configs:
+
+create _/etc/fail2ban/filter.d/nginx-bots.conf_
+
+```ini
+[Definition]
+failregex = ^<HOST> -.*"(GET|POST|HEAD) /\.(env|git|htaccess|htpasswd|DS_Store|svn|config) HTTP.*" (403|404) .*$ 
+ignoreregex =
+```
+
+create _/etc/fail2ban/jail.d/nginx-bots.conf_
+
+```ini
+[nginx-bots]
+enabled  = true
+port     = http,https
+filter   = nginx-bots
+logpath  = /var/log/nginx/access.log
+maxretry = 1
+bantime  = 48h
+findtime = 1m
+```
+
+create _/etc/fail2ban/jail.d/sshd.conf_
+
+```ini
+[sshd]
+enabled = true
+port    = ssh # Or custom sshd port
+filter  = sshd
+# For Debian 13 use backend = systemd
+logpath = /var/log/auth.log
+backend = auto
+maxretry = 3
+bantime  = 24h
+```
+
+Restart and check fail2ban
+
+```bash
+sudo systemctl restart fail2ban
+sudo systemctl status fail2ban
+sudo fail2ban-client status
+```
+
+#### Step 7: Run and Verify
 
 Now restart the entire stack on the VPS:
 

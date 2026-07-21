@@ -48,7 +48,7 @@ public class TokenAdminController {
 
         if (req.getLicenseNo() == 0) {
             LOG.warn("Token creation failed: licenseNo is required");
-            return HttpResponse.badRequest("licenseOrg is required");
+            return HttpResponse.badRequest("licenseNo is required");
         }
         if (req.getLicenseOrg() == null || req.getLicenseOrg().trim().isEmpty()) {
             LOG.warn("Token creation failed: licenseOrg is required");
@@ -196,20 +196,26 @@ public class TokenAdminController {
     PaymentService paymentService;
 
     // -----------------------------
-    // 1) Top Up by hand
+    // Top Up by hand
     // -----------------------------
-    @Post("/{tokenValue}/topup")
+    @Post("/{identifier}/topup")
     public HttpResponse<?> topUp(
-            @PathVariable String tokenValue,
+            @PathVariable String identifier,
             @Body TopUpRequest req,
             HttpRequest<?> httpRequest
     ) {
-        LOG.info("Processing topup for token: {}, amount: {}", tokenValue, req.getAmount());
+        Token token;
+        try {
+            int licenseNo = Integer.parseInt(identifier);
+            token = tokens.findByLicenseNo(licenseNo)
+                    .orElseThrow(() -> new RuntimeException("Token with license " + licenseNo + " not found"));
+            LOG.info("Processing topup for license: {}, amount: {}", licenseNo, req.getAmount());
+        } catch (NumberFormatException e) {
+            token = tokens.findByToken(identifier)
+                    .orElseThrow(() -> new RuntimeException("Token not found: " + identifier));
+            LOG.info("Processing topup for token: {}, amount: {}", identifier, req.getAmount());
+        }
 
-        Token token = tokens.findByToken(tokenValue)
-                .orElseThrow(() -> new RuntimeException("Token not found"));
-
-        // Verify admin token (filter already checked; duplicated for safety)
         Token admin = httpRequest.getAttribute("token", Token.class)
                 .orElseThrow(() -> new RuntimeException("Missing admin token"));
 
@@ -220,32 +226,6 @@ public class TokenAdminController {
 
         Token updated = paymentService.topUp(token, req.getAmount());
         LOG.info("Successfully topped up token ID: {}, new balance: {}", token.getId(), updated.getBalance());
-        return HttpResponse.ok(updated);
-    }
-
-    @Post("/{licenseNo}/topup")
-    public HttpResponse<?> topUp(
-            @PathVariable int licenseNo,
-            @Body TopUpRequest req,
-            HttpRequest<?> httpRequest
-    ) {
-        LOG.info("Processing topup for license: {}, amount: {}", licenseNo, req.getAmount());
-
-        Token token = tokens.findByLicenseNo(licenseNo)
-                .orElseThrow(() -> new RuntimeException("Token with specified license No not found"));
-
-        // Verify admin token (filter already checked; duplicated for safety)
-        Token admin = httpRequest.getAttribute("token", Token.class)
-                .orElseThrow(() -> new RuntimeException("Missing admin token"));
-
-        if (!admin.isAdmin()) {
-            LOG.warn("Unauthorized topup attempt by token ID: {}", admin.getId());
-            return HttpResponse.unauthorized();
-        }
-
-        Token updated = paymentService.topUp(token, req.getAmount());
-        LOG.info("Successfully topped up license {} (token ID: {}), new balance: {}",
-                 licenseNo, token.getId(), updated.getBalance());
         return HttpResponse.ok(updated);
     }
 
