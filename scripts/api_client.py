@@ -417,7 +417,7 @@ def cmd_webhook(args: argparse.Namespace) -> int:
         print("Provide --json or --file", file=sys.stderr)
         return 2
 
-    status, payload = client.request("POST", "/admin/tokens/webhook", raw_body=raw)
+    status, payload = client.request("POST", "/webhook/payment", raw_body=raw)
     return print_response(status, payload, args.pretty)
 
 
@@ -559,7 +559,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--keywords", help="Filter by keywords")
     p.set_defaults(handler=cmd_get)
 
-    p = add_subparser(sub, "webhook", "POST /admin/tokens/webhook")
+    p = add_subparser(sub, "webhook", "POST /webhook/payment")
     p.add_argument("--json", help="Raw webhook JSON string")
     p.add_argument("--file", help="Path to JSON file with webhook payload")
     p.set_defaults(handler=cmd_webhook)

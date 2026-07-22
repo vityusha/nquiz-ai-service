@@ -14,6 +14,9 @@ micronaut:
       - pattern: /search/**
         access:
           - isAnonymous()
+      - pattern: /webhook/**
+        access:
+          - isAnonymous()
 
 datasources:
   default:
@@ -32,4 +35,7 @@ endpoints:
     enabled: true
     sensitive: false
     details-visible: AUTHENTICATED
+
+payment:
+  webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
 

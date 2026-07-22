@@ -292,8 +292,10 @@ public class QuestionService {
             throw new RuntimeException("Insufficient balance: need " + count);
         }
 
-        token.setBalance(token.getBalance() - count);
-        token.setTotal(token.getTotal() + count);
+        Token fresh = tokenRepository.findById(token.getId())
+                .orElseThrow(() -> new IllegalStateException("Token not found after charge"));
+        token.setBalance(fresh.getBalance());
+        token.setTotal(fresh.getTotal());
 
         LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
                  count, token.getId(), token.getBalance(), token.getTotal());

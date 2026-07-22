@@ -43,12 +43,12 @@ Micronaut service that generates quiz questions with LLM providers for Nibelung 
 | `GET` | `/admin/tokens/all` | Admin Bearer token | List all tokens |
 | `GET` | `/admin/tokens/stats` | Admin Bearer token | Aggregate stats |
 | `GET` | `/admin/tokens/info/{license_no}` | Admin Bearer token | Token info by license |
-| `POST` | `/admin/tokens/webhook` | None | Payment webhook (Stripe/YK) |
 
 ### Other
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
+| `POST` | `/webhook/payment` | Stripe signature | Payment webhook (outside admin auth) |
 | `GET` | `/search` | None | HTML search page for stored questions |
 | `GET` | `/health` | None | Health check |
 
@@ -147,7 +147,6 @@ Set at minimum:
 
 ```env
 DB_URL=jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-service.db
-IMAGE=ghcr.io/YOUR_ORG/nquiz-ai-service:latest
 DEEPSEEK_API_KEY=...
 ```
 

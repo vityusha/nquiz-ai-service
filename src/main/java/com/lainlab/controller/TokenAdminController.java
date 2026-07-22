@@ -229,17 +229,4 @@ public class TokenAdminController {
         return HttpResponse.ok(updated);
     }
 
-    // -----------------------------------------
-    // 2) Top Up by payments service (Stripe/YK)
-    // -----------------------------------------
-    @Post("/webhook")
-    public HttpResponse<?> paymentWebhook(@Body String rawJson) {
-        try {
-            paymentService.handleWebhook(rawJson);
-            return HttpResponse.ok();
-        } catch (Exception e) {
-            LOG.error("Error processing payment webhook", e);
-            throw e;
-        }
-    }
 }

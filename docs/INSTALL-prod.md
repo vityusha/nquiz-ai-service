@@ -175,6 +175,9 @@ logger:
     com.lainlab: INFO
     root: WARN
 
+payment:
+  webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+
 endpoints:
   health:
     enabled: true
