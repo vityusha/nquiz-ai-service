@@ -3,6 +3,8 @@ micronaut:
     name: nquiz-ai-service
   server:
     port: 8080
+    shutdown: grace
+    max-request-size: 1MB
   security:
     intercept-url-map:
       - pattern: /api/capabilities
@@ -38,4 +40,26 @@ endpoints:
 
 payment:
   webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
+
+llm:
+  groq:
+    url: https://api.groq.com/openai/v1/chat/completions
+    model: llama-3.3-70b-versatile
+    access-id: ${GROQ_ACCESS_ID:}
+    api-key: ${GROQ_API_KEY:}
+  openai:
+    url: https://api.openai.com/v1/chat/completions
+    model: gpt-4o-mini
+    access-id: ${OPENAI_ACCESS_ID:}
+    api-key: ${OPENAI_API_KEY:}
+  gemini:
+    url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent
+    model: gemini-2.0-flash
+    access-id: ${GEMINI_ACCESS_ID:}
+    api-key: ${GEMINI_API_KEY:}
+  deepseek:
+    url: https://api.deepseek.com/chat/completions
+    model: deepseek-chat
+    access-id: ${DEEPSEEK_ACCESS_ID:}
+    api-key: ${DEEPSEEK_API_KEY:}
 

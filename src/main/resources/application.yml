@@ -4,6 +4,9 @@ micronaut:
   messages:
     basename: i18n/messages
   server:
+    port: 8080
+    shutdown: grace
+    max-request-size: 1MB
     default-charset: UTF-8
     response:
       default-charset: UTF-8
