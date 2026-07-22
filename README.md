@@ -4,18 +4,52 @@ Micronaut service that generates quiz questions with LLM providers for Nibelung 
 
 ## Stack
 
-- Java 21, Micronaut 4, Gradle
+- Java 21, Micronaut 4.6, Gradle
 - SQLite + Flyway
 - Docker / Docker Compose
 - GitHub Actions → GHCR → VPS
 
 ## API
 
+### Questions
+
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/questions/generate` | Bearer token | Generate questions |
+| `POST` | `/api/questions/generate` | Bearer token | Generate questions via LLM |
+| `POST` | `/api/questions/store` | Bearer token | Save questions to local DB |
+| `GET` | `/api/questions/get` | None | Get questions from DB (filter by mode/difficulty/type/language/keywords) |
+
+### Capabilities
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/capabilities?lang=en` | None | List supported languages, types, difficulties, modes, providers |
+
+### Token (user)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
 | `GET` | `/api/token/info` | Bearer token | Token balance and metadata |
+
+### Token admin
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
 | `POST` | `/admin/tokens/create-user` | Admin Bearer token | Create user token |
+| `POST` | `/admin/tokens/create-admin` | Admin Bearer token | Create admin token |
+| `POST` | `/admin/tokens/deactivate/{license_no}` | Admin Bearer token | Deactivate token by license |
+| `POST` | `/admin/tokens/activate/{license_no}` | Admin Bearer token | Activate token by license |
+| `POST` | `/admin/tokens/{license_no_or_token}/topup` | Admin Bearer token | Top up balance |
+| `GET` | `/admin/tokens/all` | Admin Bearer token | List all tokens |
+| `GET` | `/admin/tokens/stats` | Admin Bearer token | Aggregate stats |
+| `GET` | `/admin/tokens/info/{license_no}` | Admin Bearer token | Token info by license |
+
+### Other
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/webhook/payment` | Stripe signature | Payment webhook (outside admin auth) |
+| `GET` | `/search` | None | HTML search page for stored questions |
 | `GET` | `/health` | None | Health check |
 
 ## Local development
@@ -36,7 +70,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-App: http://localhost:8080  
+App: http://localhost:8080
 Health: http://localhost:8080/health
 
 ### Run without Docker
@@ -62,6 +96,13 @@ Copy templates before first run:
 cp .env.example .env
 cp config/application-prod.yml.example config/application-prod.yml   # prod only
 ```
+
+## Notable quirks
+
+- **Dialect.H2 for SQLite:** All `@JdbcRepository` use `Dialect.H2` because Micronaut Data lacks SQLite dialect support. Keep as-is.
+- **Rate limit:** Per-IP 10 req/min bucket (`RateLimitFilter`), max 10k tracked IPs.
+- **Admin bootstrap:** First run creates an admin token and prints it to stdout when no admin tokens exist.
+- **No HTTPS:** Terminated at reverse proxy (Nginx/Caddy). App serves HTTP on :8080.
 
 ## Docker image
 
@@ -106,7 +147,6 @@ Set at minimum:
 
 ```env
 DB_URL=jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-service.db
-IMAGE=ghcr.io/YOUR_ORG/nquiz-ai-service:latest
 DEEPSEEK_API_KEY=...
 ```
 
@@ -140,6 +180,7 @@ Add repository secrets:
 | `VPS_HOST` | VPS IP or hostname |
 | `VPS_SSH_KEY` | Private SSH key for deploy user |
 | `VPS_USER` | SSH user (default: `deploy`) |
+| `VPS_PORT` | SSH port (default: `22`) |
 
 On push to `main`, CI builds the image, pushes to `ghcr.io/<owner>/nquiz-ai-service`, and runs `docker compose pull && up -d` on the VPS.
 
@@ -156,14 +197,17 @@ Create a `production` environment in GitHub if you use environment protection ru
 ├── docker-compose.prod.yml  # VPS production template
 ├── scripts/
 │   ├── dev-up.sh
-│   └── vps-setup.sh
+│   ├── deploy.sh
+│   ├── backup.sh
+│   ├── vps-setup.sh
+│   └── api_client.py
 ├── src/
 │   └── main/
 │       ├── java/
 │       └── resources/
 └── .github/workflows/
-    ├── ci.yml
-    └── deploy.yml
+    ├── ci-cd.yml
+    └── cleanup.yml
 ```
 
 ## Build & test

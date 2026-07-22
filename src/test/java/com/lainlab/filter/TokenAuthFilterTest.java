@@ -158,7 +158,7 @@ class TokenAuthFilterTest {
             );
         });
 
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+        assertEquals(HttpStatus.PAYMENT_REQUIRED, ex.getStatus());
     }
 
     @Test

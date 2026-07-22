@@ -31,14 +31,14 @@ No lint or typecheck tasks exist.
 ## Test quirks
 
 - `maxParallelForks = 1` — tests must run sequentially
-- API key env vars are hardcoded in `build.gradle` `test { environment ... }` — tests never hit real LLMs
+- API key env vars + `PAYMENT_WEBHOOK_SECRET` are hardcoded in `build.gradle` `test { environment ... }` — tests never hit real LLMs
 - H2 in-memory DB for tests (not SQLite)
 - JaCoCo excludes: `config/**`, `model/**`, `dto/**`, `db/**`
 
 ## Notable quirks
 
 - **Dialect.H2 for SQLite:** All `@JdbcRepository` use `Dialect.H2` because Micronaut Data lacks SQLite dialect support. Keep as-is.
-- **Rate limit:** Global 10 req/min bucket (`RateLimitFilter`), not per-IP or per-token.
+- **Rate limit:** Per-IP 10 req/min bucket (`RateLimitFilter`), max 10k tracked IPs.
 - **No HTTPS:** Terminated at reverse proxy (Nginx/Caddy). App serves HTTP on :8080.
 - **Admin bootstrap:** First run creates an admin token and prints it to stdout when no admin tokens exist.
 - **Dockerfile:** Pre-built JAR expected at `build/libs/*-all.jar` — build locally first, then `docker build -f docker/Dockerfile`.

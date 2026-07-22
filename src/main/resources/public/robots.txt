@@ -1,0 +1,19 @@
+# nquiz-ai-service
+
+# Public pages
+User-agent: *
+Allow: /
+Allow: /search
+Allow: /search/*
+
+# API — no indexation
+Disallow: /api/
+
+# Admin — no indexation
+Disallow: /admin/
+
+# Health check — no indexation
+Disallow: /health
+
+# Crawl-delay (optional, polite bots)
+Crawl-delay: 10

@@ -6,6 +6,8 @@ build/
 !build/libs/
 build/libs/*
 !build/libs/*-all.jar
+test_output.txt
+__pycache__/
 
 # Git & CI
 .git/

@@ -136,12 +136,23 @@ public class TokenAdminController {
     }
 
     @Get("/all")
-    public Iterable<Token> listAllTokens() {
-        return tokens.findAll();
+    public HttpResponse<?> listAllTokens(HttpRequest<?> httpRequest) {
+        Token token = httpRequest.getAttribute("token", Token.class)
+                .orElseThrow(() -> new RuntimeException("Missing admin token"));
+        if (!token.isAdmin()) {
+            return HttpResponse.unauthorized();
+        }
+        return HttpResponse.ok(tokens.findAll());
     }
 
     @Get("/stats")
-    public HttpResponse<?> stats() {
+    public HttpResponse<?> stats(HttpRequest<?> httpRequest) {
+        Token token = httpRequest.getAttribute("token", Token.class)
+                .orElseThrow(() -> new RuntimeException("Missing admin token"));
+        if (!token.isAdmin()) {
+            return HttpResponse.unauthorized();
+        }
+
         long totalActiveLicenseNo = tokens.countDistinctActiveLicenseNo();
         long totalAiRequests = tokens.countAiRequests();
         long totalQuestionsStored = questionRepository.count();
@@ -229,17 +240,4 @@ public class TokenAdminController {
         return HttpResponse.ok(updated);
     }
 
-    // -----------------------------------------
-    // 2) Top Up by payments service (Stripe/YK)
-    // -----------------------------------------
-    @Post("/webhook")
-    public HttpResponse<?> paymentWebhook(@Body String rawJson) {
-        try {
-            paymentService.handleWebhook(rawJson);
-            return HttpResponse.ok();
-        } catch (Exception e) {
-            LOG.error("Error processing payment webhook", e);
-            throw e;
-        }
-    }
 }
