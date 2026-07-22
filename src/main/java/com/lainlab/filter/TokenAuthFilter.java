@@ -59,7 +59,7 @@ public class TokenAuthFilter {
 
         if (token.getBalance() <= 0) {
             LOG.warn("Token {} has insufficient balance on {}", token.getId(), request.getUri());
-            throw new HttpStatusException(HttpStatus.UNAUTHORIZED, "Insufficient balance!");
+            throw new HttpStatusException(HttpStatus.PAYMENT_REQUIRED, "Insufficient balance");
         }
     }
 }

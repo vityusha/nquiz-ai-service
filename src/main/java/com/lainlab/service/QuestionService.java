@@ -289,7 +289,7 @@ public class QuestionService {
         int updated = tokenRepository.chargeBalance(token.getId(), count);
         if (updated == 0) {
             LOG.error("Insufficient balance: need {} questions, token ID: {}", count, token.getId());
-            throw new RuntimeException("Insufficient balance: need " + count);
+            throw new HttpStatusException(HttpStatus.PAYMENT_REQUIRED, "Insufficient balance");
         }
 
         Token fresh = tokenRepository.findById(token.getId())

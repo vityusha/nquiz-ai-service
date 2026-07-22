@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Map;
@@ -121,9 +122,10 @@ public class PaymentService {
             }
 
             String payload = timestamp + "." + rawJson;
-            String computed = hmacSha256(webhookSecret, payload);
+            byte[] computed = hmacSha256(webhookSecret, payload);
+            byte[] expected = HexFormat.of().parseHex(expectedSig);
 
-            return computed.equals(expectedSig);
+            return MessageDigest.isEqual(computed, expected);
 
         } catch (Exception e) {
             LOG.error("Signature verification error: {}", e.getMessage());
@@ -131,10 +133,9 @@ public class PaymentService {
         }
     }
 
-    private static String hmacSha256(String secret, String data) throws Exception {
+    private static byte[] hmacSha256(String secret, String data) throws Exception {
         Mac mac = Mac.getInstance(HMAC_SHA256);
         mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_SHA256));
-        byte[] hash = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-        return HexFormat.of().formatHex(hash);
+        return mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
     }
 }

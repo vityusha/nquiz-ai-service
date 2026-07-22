@@ -23,10 +23,20 @@ public class QuestionController {
     @Inject
     private QuestionService questionService;
 
+    private String resolveClientIp(HttpRequest<?> request) {
+        return request.getAttribute("realClientIp", String.class)
+                .orElseGet(() -> {
+                    if (request.getRemoteAddress() != null
+                            && request.getRemoteAddress().getAddress() != null) {
+                        return request.getRemoteAddress().getAddress().getHostAddress();
+                    }
+                    return "unknown";
+                });
+    }
+
     @Post("/generate")
     public Mono<QuestionResponseList> generate(@Body QuestionRequest req, HttpRequest<?> httpRequest) throws Exception {
-        String ip = httpRequest.getAttribute("realClientIp", String.class)
-            .orElseGet(() -> httpRequest.getRemoteAddress().getAddress().getHostAddress());
+        String ip = resolveClientIp(httpRequest);
 
         return Mono.from(questionService.generateReactive(req, ip, httpRequest));
     }
@@ -48,8 +58,7 @@ public class QuestionController {
      */
     @Post("/store")
     public HttpResponse<?> saveQuestion(HttpRequest<?> httpRequest, @Body QuestionResponseList body) {
-        String ip = httpRequest.getAttribute("realClientIp", String.class)
-            .orElseGet(() -> httpRequest.getRemoteAddress().getAddress().getHostAddress());
+        String ip = resolveClientIp(httpRequest);
 
         return questionService.saveQuestion(httpRequest, body, ip);
     }
