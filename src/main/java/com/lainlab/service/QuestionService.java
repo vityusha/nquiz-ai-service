@@ -24,6 +24,8 @@ import jakarta.inject.Singleton;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
+import reactor.util.retry.Retry;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -81,6 +83,13 @@ public class QuestionService {
         LOG.info("Generating questions for IP: {}, provider: {}, language: {}, difficulty: {}, type: {}, count: {}",
                  ip, req.getProvider(), req.getLanguage(), req.getDifficulty(), req.getType(), req.getCount());
 
+        // Validate required fields
+        if (req.getProvider() == null || req.getMode() == null || req.getLanguage() == null
+                || req.getDifficulty() == null || req.getType() == null) {
+            throw new HttpStatusException(HttpStatus.BAD_REQUEST,
+                    "Missing required fields: provider, mode, language, difficulty, type are all required");
+        }
+
         // Check limits
         if (req.getCount() < 1 || req.getCount() > QuestionRequest.MAX_QUESTIONS_COUNT) {
             LOG.error("Invalid question count requested: {}. Must be between 1 and {}", req.getCount(), QuestionRequest.MAX_QUESTIONS_COUNT);
@@ -118,10 +127,20 @@ public class QuestionService {
         LLMProvider provider = getProvider(req.getProvider());
         LOG.debug("Calling LLM provider: {}", req.getProvider());
 
-        // ---------- Reactive call (Micronaut 4) ----------
-        return Publishers.map(
-                provider.generateReactive(new LLMRequest(prompt, 2048)),
-                llm -> {
+        // ---------- Reactive call with retry (Micronaut 4 + Reactor) ----------
+        return Flux.defer(() -> {
+            try {
+                return Flux.from(provider.generateReactive(new LLMRequest(prompt, 2048)));
+            } catch (Exception e) {
+                return Flux.error(e);
+            }
+        })
+                .retryWhen(Retry.backoff(2, Duration.ofSeconds(1))
+                        .filter(ex -> !(ex instanceof IllegalStateException))
+                        .onRetryExhaustedThrow((spec, signal) ->
+                                new RuntimeException("LLM provider unavailable after retries: " + signal.failure().getMessage(), signal.failure()))
+                )
+                .map(llm -> {
                     LOG.debug("LLM Response received: {}", llm.content().substring(0, Math.min(200, llm.content().length())) + (llm.content().length() > 200 ? "..." : ""));
 
                     String fixed = JsonFixer.fix(llm.content());
@@ -173,8 +192,7 @@ public class QuestionService {
 
                     LOG.info("Successfully generated and returned {} questions for IP: {}", response.getQuestions().size(), ip);
                     return response;
-                }
-        );
+                });
     }
 
     private PromptBuilder.PromptBundle buildPrompt(QuestionRequest req, List<String> previousQuestions, int count) {
