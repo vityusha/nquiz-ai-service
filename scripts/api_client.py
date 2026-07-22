@@ -5,14 +5,32 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 
-DEFAULT_BASE_URL = "http://localhost:8080"
+def load_dotenv(path: str = ".env") -> None:
+    p = Path(path)
+    if not p.is_file():
+        return
+    with p.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip())
+
+
+load_dotenv()
+
+
+DEFAULT_BASE_URL = os.environ.get("NQUIZ_BASE_URL", "http://localhost:8080")
 
 PROVIDERS = ("GROQ", "OPENAI", "GEMINI", "DEEPSEEK")
 MODES = ("ONE_CORRECT", "MULTI_CORRECT", "ORDERING", "MATCHING")
@@ -238,6 +256,13 @@ def add_global_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON responses")
 
 
+def require_token(value: str | None, arg_name: str, env_name: str) -> str:
+    if not value:
+        print(f"Missing {arg_name}. Pass --{arg_name} or set {env_name} in .env", file=sys.stderr)
+        raise SystemExit(2)
+    return value
+
+
 def cmd_health(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request("GET", "/health")
@@ -252,12 +277,14 @@ def cmd_capabilities(args: argparse.Namespace) -> int:
 
 
 def cmd_token_info(args: argparse.Namespace) -> int:
+    token = require_token(args.token, "token", "NQUIZ_USER_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
-    status, payload = client.request("GET", "/api/token/info", token=args.token)
+    status, payload = client.request("GET", "/api/token/info", token=token)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_questions(args: argparse.Namespace) -> int:
+    token = require_token(args.token, "token", "NQUIZ_USER_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     if args.json_file:
         with open(args.json_file, encoding="utf-8") as fh:
@@ -276,11 +303,12 @@ def cmd_questions(args: argparse.Namespace) -> int:
             "type": args.type,
             "keywords": args.keywords,
         }
-    status, payload = client.request("POST", "/api/questions/generate", token=args.token, body=body)
+    status, payload = client.request("POST", "/api/questions/generate", token=token, body=body)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_create_user(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     if args.json_file:
         with open(args.json_file, encoding="utf-8") as fh:
@@ -304,12 +332,13 @@ def cmd_create_user(args: argparse.Namespace) -> int:
             "admin": args.admin,
         }
     status, payload = client.request(
-        "POST", "/admin/tokens/create-user", token=args.admin_token, body=body
+        "POST", "/admin/tokens/create-user", token=admin_token, body=body
     )
     return print_response(status, payload, args.pretty)
 
 
 def cmd_create_admin(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     if args.json_file:
         with open(args.json_file, encoding="utf-8") as fh:
@@ -323,53 +352,59 @@ def cmd_create_admin(args: argparse.Namespace) -> int:
             "admin": True,
         }
     status, payload = client.request(
-        "POST", "/admin/tokens/create-admin", token=args.admin_token, body=body
+        "POST", "/admin/tokens/create-admin", token=admin_token, body=body
     )
     return print_response(status, payload, args.pretty)
 
 
 def cmd_deactivate(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "POST",
         f"/admin/tokens/deactivate/{args.license-no}",
-        token=args.admin_token,
+        token=admin_token,
     )
     return print_response(status, payload, args.pretty)
 
 
 def cmd_activate(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "POST",
         f"/admin/tokens/activate/{args.license-no}",
-        token=args.admin_token,
+        token=admin_token,
     )
     return print_response(status, payload, args.pretty)
 
 
 def cmd_list_tokens(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
-    status, payload = client.request("GET", "/admin/tokens/all", token=args.admin_token)
+    status, payload = client.request("GET", "/admin/tokens/all", token=admin_token)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_stats(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
-    status, payload = client.request("GET", "/admin/tokens/stats", token=args.admin_token)
+    status, payload = client.request("GET", "/admin/tokens/stats", token=admin_token)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_get_token(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "GET",
         f"/admin/tokens/info/{args.license-no}",
-        token=args.admin_token)
+        token=admin_token)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_topup_token(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     if args.json_file:
         with open(args.json_file, encoding="utf-8") as fh:
@@ -382,13 +417,14 @@ def cmd_topup_token(args: argparse.Namespace) -> int:
     status, payload = client.request(
         "POST",
         f"/admin/tokens/{args.token_value}/topup",
-        token=args.admin_token,
+        token=admin_token,
         body=body,
     )
     return print_response(status, payload, args.pretty)
 
 
 def cmd_topup_license(args: argparse.Namespace) -> int:
+    admin_token = require_token(args.admin_token, "admin-token", "NQUIZ_ADMIN_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     if args.json_file:
         with open(args.json_file, encoding="utf-8") as fh:
@@ -401,7 +437,7 @@ def cmd_topup_license(args: argparse.Namespace) -> int:
     status, payload = client.request(
         "POST",
         f"/admin/tokens/{args.license_no}/topup",
-        token=args.admin_token,
+        token=admin_token,
         body=body,
     )
     return print_response(status, payload, args.pretty)
@@ -422,6 +458,7 @@ def cmd_webhook(args: argparse.Namespace) -> int:
 
 
 def cmd_store(args: argparse.Namespace) -> int:
+    token = require_token(args.token, "token", "NQUIZ_USER_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     raw = args.json
     if args.file:
@@ -431,11 +468,12 @@ def cmd_store(args: argparse.Namespace) -> int:
         print("Provide --json or --file", file=sys.stderr)
         return 2
 
-    status, payload = client.request("POST", "/api/questions/store", token=args.token, raw_body=raw)
+    status, payload = client.request("POST", "/api/questions/store", token=token, raw_body=raw)
     return print_response(status, payload, args.pretty)
 
 
 def cmd_get(args: argparse.Namespace) -> int:
+    token = require_token(args.token, "token", "NQUIZ_USER_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     query = {}
     if args.mode:
@@ -448,7 +486,7 @@ def cmd_get(args: argparse.Namespace) -> int:
         query["language"] = args.language
     if args.keywords:
         query["keywords"] = args.keywords
-    status, payload = client.request("GET", "/api/questions/get", token=args.token, query=query)
+    status, payload = client.request("GET", "/api/questions/get", token=token, query=query)
     return print_response(status, payload, args.pretty)
 
 
@@ -477,11 +515,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(handler=cmd_capabilities)
 
     p = add_subparser(sub, "token-info", "GET /api/token/info")
-    p.add_argument("--token", required=True, help="User API token (Bearer)")
+    p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.set_defaults(handler=cmd_token_info)
 
     p = add_subparser(sub, "questions", "POST /api/questions/generate")
-    p.add_argument("--token", required=True, help="User API token (Bearer)")
+    p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.add_argument("--provider", choices=PROVIDERS)
     p.add_argument("--count", type=int, default=1)
     p.add_argument("--mode", default="ONE_CORRECT", choices=MODES)
@@ -493,7 +531,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(handler=cmd_questions)
 
     p = add_subparser(sub, "create-user", "POST /admin/tokens/create-user")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--license-no", type=int)
     p.add_argument("--license-org")
     p.add_argument("--email")
@@ -503,55 +541,55 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(handler=cmd_create_user)
 
     p = add_subparser(sub, "create-admin", "POST /admin/tokens/create-admin")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_create_admin)
 
     p = add_subparser(sub, "deactivate", "POST /admin/tokens/deactivate/{license_no}")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
     p.set_defaults(handler=cmd_deactivate)
 
     p = add_subparser(sub, "activate", "POST /admin/tokens/activate/{license_no}")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
     p.set_defaults(handler=cmd_activate)
 
     p = add_subparser(sub, "list-tokens", "GET /admin/tokens/all")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.set_defaults(handler=cmd_list_tokens)
 
     p = add_subparser(sub, "stats", "GET /admin/tokens/stats")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.set_defaults(handler=cmd_stats)
 
     p = add_subparser(sub, "get-token", "GET /admin/tokens/info/{license_no}")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--license-no", type=int, required=True, help="Nibelung license number")
     p.set_defaults(handler=cmd_get_token)
 
     p = add_subparser(sub, "topup-token", "POST /admin/tokens/{token}/topup")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--token-value", required=True, help="Full user token string")
     p.add_argument("--amount", type=int)
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_topup_token)
 
     p = add_subparser(sub, "topup-license", "POST /admin/tokens/{license_no}/topup")
-    p.add_argument("--admin-token", required=True)
+    p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))
     p.add_argument("--license-no", type=int, required=True)
     p.add_argument("--amount", type=int)
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
     p.set_defaults(handler=cmd_topup_license)
 
     p = add_subparser(sub, "store", "POST /api/questions/store")
-    p.add_argument("--token", required=True, help="User API token (Bearer)")
+    p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.add_argument("--json", help="Raw JSON string with questions array")
     p.add_argument("--file", help="Path to JSON file with questions payload")
     p.set_defaults(handler=cmd_store)
 
     p = add_subparser(sub, "get", "GET /api/questions/get")
-    p.add_argument("--token", required=True, help="User API token (Bearer)")
+    p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.add_argument("--mode", choices=MODES, help="Filter by answer mode")
     p.add_argument("--difficulty", choices=DIFFICULTIES, help="Filter by difficulty level")
     p.add_argument("--type", choices=QUESTION_TYPES, help="Filter by question type")
