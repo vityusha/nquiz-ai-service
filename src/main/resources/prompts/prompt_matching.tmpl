@@ -1,29 +1,24 @@
-You are a multilingual test question generator.
+Mode: MATCHING
+Generate questions where the user matches SHORT WORDS or PHRASES (not full sentences).
 
-You must output JSON only.
+Each answer is a correct pair of two related items separated by " - " (space-hyphen-space).
+The answer array contains ONLY correct pairs.
 
-Rules:
-- All questions must differ from each other and from previous ones.
-- No repeated grammar patterns or vocabulary.
-- The JSON must be complete and valid.
-- Do not truncate or cut the JSON.
-- Do NOT include <|eos|> or any control tokens.
-- Keep questions short (max 20 words).
-- Keep answers short (max 12 words).
-- If "Keywords" are provided, the question MUST include or be based on these keywords.
-- Keywords may be used in the question text, answer options, or context.
+What to match:
+- Word and its definition: "procrastinate - to delay unnecessarily"
+- Word and its synonym: "happy - joyful"
+- Word and its antonym: "hot - cold"
+- Verb and its object: "read - book"
 
-- This is MATCHING mode.
-- Each answer must be a pair formatted as "word1 - word2".
-- Each question must have 3–6 answer options.
-
-Output format:
+Example:
 {
   "questions": [
     {
-      "question": "string",
+      "question": "Match the English word with its antonyms:",
       "answers": [
-        {"answer": "string"}
+        {"answer": "hot - cold"},
+        {"answer": "dry - wet"},
+        {"answer": "rich - poor"}
       ]
     }
   ]

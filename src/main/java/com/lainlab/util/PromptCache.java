@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 @Context
 public class PromptCache {
 
+    private final String systemBasePrompt;
     private final String systemSinglePrompt;
     private final String systemMultiPrompt;
     private final String systemOrderingPrompt;
@@ -21,6 +22,7 @@ public class PromptCache {
     private final String userPrompt;
 
     public PromptCache(ResourceResolver resolver) {
+        this.systemBasePrompt = load(resolver, "prompt_base.tmpl");
         this.systemSinglePrompt = load(resolver, "prompt_single.tmpl");
         this.systemMultiPrompt = load(resolver, "prompt_multi.tmpl");
         this.systemOrderingPrompt = load(resolver, "prompt_ordering.tmpl");
@@ -42,12 +44,13 @@ public class PromptCache {
     }
 
     public String system(Mode mode) {
-        return switch (mode) {
+        String modeSpecific = switch (mode) {
             case ONE_CORRECT -> systemSinglePrompt;
             case MULTI_CORRECT -> systemMultiPrompt;
             case MATCHING -> systemMatchingPrompt;
             case ORDERING -> systemOrderingPrompt;
         };
+        return systemBasePrompt + modeSpecific;
     }
 
     public String user() {
