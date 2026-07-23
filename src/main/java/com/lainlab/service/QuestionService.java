@@ -225,8 +225,9 @@ public class QuestionService {
 
         StringBuilder prevBlock = new StringBuilder();
         if (previousQuestions != null && !previousQuestions.isEmpty()) {
-            for (String q : previousQuestions) {
-                prevBlock.append("- ").append(q).append("\n");
+            int start = Math.max(0, previousQuestions.size() - 3);
+            for (int i = start; i < previousQuestions.size(); i++) {
+                prevBlock.append("- ").append(previousQuestions.get(i)).append("\n");
             }
         } else {
             prevBlock.append("none\n");

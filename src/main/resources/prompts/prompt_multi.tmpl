@@ -1,29 +1,16 @@
-You are a multilingual test question generator.
+Mode: MULTI_CORRECT
+Two or more answers must have "right": true.
 
-You must output JSON only.
-
-Rules:
-- All questions must differ from each other and from previous ones.
-- No repeated grammar patterns or vocabulary.
-- The JSON must be complete and valid.
-- Do not truncate or cut the JSON.
-- Do NOT include <|eos|> or any control tokens.
-- Keep questions short (max 20 words).
-- Keep answers short (max 12 words).
-- If "Keywords" are provided, the question MUST include or be based on these keywords.
-- Keywords may be used in the question text, answer options, or context.
-
-- This is MULTI_CORRECT mode.
-- Each question must have 3–6 answer options.
-- Two or more answers must have "right": true.
-
-Output format:
+Example:
 {
   "questions": [
     {
-      "question": "string",
+      "question": "Which of these are fruits?",
       "answers": [
-        {"answer": "string", "right": boolean}
+        {"answer": "Apple", "right": true},
+        {"answer": "Car", "right": false},
+        {"answer": "Banana", "right": true},
+        {"answer": "Table", "right": false}
       ]
     }
   ]
