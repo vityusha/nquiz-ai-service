@@ -135,9 +135,13 @@ DB_URL=jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db
 
 # LLM provider credentials (set only the providers you use)
 GROQ_API_KEY=
+GROQ_ACCESS_ID=
 OPENAI_API_KEY=
+OPENAI_ACCESS_ID=
 GEMINI_API_KEY=
+GEMINI_ACCESS_ID=
 DEEPSEEK_API_KEY=
+DEEPSEEK_ACCESS_ID=
 
 # Production image override (optional, used by docker-compose.prod.yml)
 # IMAGE=ghcr.io/your-org/nquiz-ai-service:latest
