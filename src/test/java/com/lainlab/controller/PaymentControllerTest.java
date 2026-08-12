@@ -71,7 +71,7 @@ class PaymentControllerTest {
         token.setCreatedAt(LocalDateTime.now());
         tokenRepository.save(token);
 
-        String body = "{\"metadata\":{\"token\":\"sk_user_webhook_test\"},\"amount\":25}";
+        String body = "{\"id\":\"evt_webhook_ctrl\",\"metadata\":{\"token\":\"sk_user_webhook_test\"},\"amount\":25}";
 
         long timestamp = System.currentTimeMillis() / 1000;
         String payload = timestamp + "." + body;
@@ -89,6 +89,28 @@ class PaymentControllerTest {
 
         Token fromDb = tokenRepository.findById(token.getId()).orElseThrow();
         assertEquals(75, fromDb.getBalance(), "Balance should increase by webhook amount");
+    }
+
+    @Test
+    @DisplayName("POST /webhook/payment should return 500 when token not found")
+    void testWebhookReturnsServerErrorForUnknownToken() throws Exception {
+        String body = "{\"id\":\"evt_webhook_unknown\",\"metadata\":{\"token\":\"sk_user_nonexistent\"},\"amount\":25}";
+
+        long timestamp = System.currentTimeMillis() / 1000;
+        String payload = timestamp + "." + body;
+        String sig = hmacSha256(WEBHOOK_SECRET, payload);
+        String sigHeader = "t=" + timestamp + ",v1=" + sig;
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () ->
+            client.toBlocking().exchange(
+                HttpRequest.POST("/webhook/payment", body)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("Stripe-Signature", sigHeader),
+                String.class
+            )
+        );
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, ex.getStatus());
     }
 
     private static String hmacSha256(String secret, String data) throws Exception {
