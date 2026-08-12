@@ -1,5 +1,6 @@
 package com.lainlab.service;
 
+import com.lainlab.db.ProcessedWebhookEventRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -29,10 +30,14 @@ class PaymentServiceTest {
     @Inject
     TokenRepository tokenRepository;
 
+    @Inject
+    ProcessedWebhookEventRepository processedWebhookEventRepository;
+
     private Token testToken;
 
     @BeforeEach
     void setUp() {
+        processedWebhookEventRepository.deleteAll();
         tokenRepository.deleteAll();
 
         testToken = new Token();

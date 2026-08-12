@@ -1,5 +1,6 @@
 package com.lainlab.controller;
 
+import com.lainlab.db.ProcessedWebhookEventRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import io.micronaut.http.HttpRequest;
@@ -35,8 +36,12 @@ class PaymentControllerTest {
     @Inject
     TokenRepository tokenRepository;
 
+    @Inject
+    ProcessedWebhookEventRepository processedWebhookEventRepository;
+
     @BeforeEach
     void setUp() {
+        processedWebhookEventRepository.deleteAll();
         tokenRepository.deleteAll();
     }
 

@@ -113,9 +113,18 @@ public class QuestionService {
             if (cached != null) {
                 LOG.info("Cache HIT for key {} (IP {}), returning {} questions", key, ip, cached.getQuestions().size());
 
+                reserveGenerationCharge(httpRequest, req);
+
                 ipHistory.asMap()
                         .computeIfAbsent(ip, k -> ConcurrentHashMap.newKeySet())
                         .add(key);
+
+                Mode mode = req.getMode();
+                for (QuestionResponse q : cached.getQuestions()) {
+                    q.setMode(mode);
+                }
+
+                saveLogEntry(httpRequest, ip, req, cached);
 
                 return Publishers.just(cached);
             }
