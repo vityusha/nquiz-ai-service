@@ -85,8 +85,8 @@ public class PaymentService {
 
     private boolean verifySignature(String rawJson, Map<String, String> headers) {
         if (webhookSecret == null || webhookSecret.isBlank()) {
-            LOG.warn("PAYMENT_WEBHOOK_SECRET is not set — skipping signature verification");
-            return true;
+            LOG.error("PAYMENT_WEBHOOK_SECRET is not set — rejecting webhook");
+            return false;
         }
 
         String sigHeader = headers.get("stripe-signature");

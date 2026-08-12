@@ -132,6 +132,8 @@ public class QuestionService {
         LLMProvider provider = getProvider(req.getProvider());
         LOG.debug("Calling LLM provider: {}", req.getProvider());
 
+        GenerationCharge charge = reserveGenerationCharge(httpRequest, req);
+
         // ---------- Reactive call with retry (Micronaut 4 + Reactor) ----------
         return Flux.defer(() -> {
             try {
@@ -145,6 +147,7 @@ public class QuestionService {
                         .onRetryExhaustedThrow((spec, signal) ->
                                 new RuntimeException("LLM provider unavailable after retries: " + signal.failure().getMessage(), signal.failure()))
                 )
+                .doOnError(e -> releaseGenerationCharge(charge))
                 .map(llm -> {
                     LOG.debug("LLM Response received: {}", llm.content().substring(0, Math.min(200, llm.content().length())) + (llm.content().length() > 200 ? "..." : ""));
 
@@ -189,8 +192,6 @@ public class QuestionService {
                     ipHistory.asMap()
                             .computeIfAbsent(ip, k -> ConcurrentHashMap.newKeySet())
                             .add(key);
-
-                    chargeBalance(httpRequest, req);
 
                     // Save log entry
                     saveLogEntry(httpRequest, ip, req, response);
@@ -309,15 +310,30 @@ public class QuestionService {
         };
     }
 
-    private void chargeBalance(HttpRequest<?> request, QuestionRequest req) {
-        if(request == null)
-            return;
+    private record GenerationCharge(Long tokenId, int count, boolean active) {
+        static GenerationCharge none() {
+            return new GenerationCharge(null, 0, false);
+        }
+    }
+
+    /**
+     * Atomically reserves balance before an LLM call. Admin tokens are not charged.
+     * On generation failure, call {@link #releaseGenerationCharge}.
+     */
+    private GenerationCharge reserveGenerationCharge(HttpRequest<?> request, QuestionRequest req) {
+        if (request == null) {
+            return GenerationCharge.none();
+        }
 
         Token token = request.getAttribute("token", Token.class)
                 .orElseThrow(() -> new IllegalStateException("Token missing in request"));
 
-        int count = req.getCount();
+        if (token.isAdmin()) {
+            LOG.debug("Skipping balance reservation for admin token {}", token.getId());
+            return GenerationCharge.none();
+        }
 
+        int count = req.getCount();
         int updated = tokenRepository.chargeBalance(token.getId(), count);
         if (updated == 0) {
             LOG.error("Insufficient balance: need {} questions, token ID: {}", count, token.getId());
@@ -329,8 +345,23 @@ public class QuestionService {
         token.setBalance(fresh.getBalance());
         token.setTotal(fresh.getTotal());
 
-        LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
-                 count, token.getId(), token.getBalance(), token.getTotal());
+        LOG.info("Balance reserved: {} questions, token ID: {}, new balance: {}",
+                count, token.getId(), token.getBalance());
+
+        return new GenerationCharge(token.getId(), count, true);
+    }
+
+    private void releaseGenerationCharge(GenerationCharge charge) {
+        if (!charge.active()) {
+            return;
+        }
+
+        int refunded = tokenRepository.refundBalance(charge.tokenId(), charge.count());
+        if (refunded == 0) {
+            LOG.error("Failed to refund {} questions for token ID {}", charge.count(), charge.tokenId());
+        } else {
+            LOG.info("Balance refunded: {} questions, token ID: {}", charge.count(), charge.tokenId());
+        }
     }
 
     private void saveLogEntry(HttpRequest<?> request, String ip, QuestionRequest req, QuestionResponseList response) {
