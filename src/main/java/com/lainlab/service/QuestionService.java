@@ -8,6 +8,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lainlab.db.*;
 import com.lainlab.dto.*;
 import com.lainlab.i18n.LocalizationService;
+import com.lainlab.model.Difficulty;
 import com.lainlab.model.Mode;
 import com.lainlab.model.Provider;
 import com.lainlab.model.QuestionType;
@@ -41,9 +42,6 @@ public class QuestionService {
 
     @Inject
     AiResponseLogRepository aiResponseLogRepository;
-
-    @Inject
-    LocalizationService i18n;
 
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(QuestionService.class);
@@ -247,18 +245,17 @@ public class QuestionService {
             prevBlock.append("none\n");
         }
 
-        QuestionType qt = req.getType();
-        String typeKey = qt.name();
-        String typeTitle = i18n.get("type." + typeKey, null);
-        String typeDesc  = i18n.get("type." + typeKey + ".desc", null);
+        PromptLabels.Entry diff = PromptLabels.forDifficulty(req.getDifficulty());
+        PromptLabels.Entry topic = PromptLabels.forQuestionType(req.getType());
 
         Map<String, Object> ctx = new HashMap<>();
         ctx.put("nonce", nonce);
         ctx.put("count", count);
         ctx.put("lang", req.getLanguage());
-        ctx.put("diff", req.getDifficulty());
-        ctx.put("typeTitle", typeTitle);
-        ctx.put("typeDesc", typeDesc);
+        ctx.put("diffTitle", diff.title());
+        ctx.put("diffDesc", diff.description());
+        ctx.put("typeTitle", topic.title());
+        ctx.put("typeDesc", topic.description());
         ctx.put("prev", prevBlock.toString());
         ctx.put("variation", variation);
         ctx.put("style", style);
