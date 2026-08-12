@@ -3,6 +3,10 @@ package com.lainlab.util;
 import com.lainlab.model.Difficulty;
 import com.lainlab.model.QuestionType;
 
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 /**
  * English labels for LLM prompts only. UI translations stay in i18n/messages_*.properties.
  */
@@ -11,6 +15,105 @@ public final class PromptLabels {
     public record Entry(String title, String description) {}
 
     private PromptLabels() {
+    }
+
+    public static String randomVariation(QuestionType type) {
+        return randomVariation(type, ThreadLocalRandom.current());
+    }
+
+    public static String randomVariation(QuestionType type, Random random) {
+        List<String> options = variationsFor(type);
+        return options.get(random.nextInt(options.size()));
+    }
+
+    private static List<String> variationsFor(QuestionType type) {
+        return switch (type) {
+            case GRAMMAR -> List.of(
+                    "Across the batch, vary sentence structures (statements, questions, negatives).",
+                    "Across the batch, test different grammar points — do not repeat the same rule twice.",
+                    "Use different subjects and contexts while staying on the same grammar focus."
+            );
+            case TENSES -> List.of(
+                    "Vary past, present, and future forms across questions.",
+                    "Include different aspect uses (simple, continuous, perfect) where level allows.",
+                    "Use different time markers (yesterday, now, next week) across questions."
+            );
+            case ARTICLES -> List.of(
+                    "Vary a, an, the, and zero article contexts across questions.",
+                    "Use different noun types: countable, uncountable, and proper nouns.",
+                    "Cover different situations: first mention, specific reference, and general statements."
+            );
+            case VOCABULARY -> List.of(
+                    "Use different word families, topics, and contexts in each question.",
+                    "Vary word classes: nouns, verbs, adjectives, and adverbs.",
+                    "Avoid repeating the same headword or root across questions."
+            );
+            case PHRASAL_VERBS -> List.of(
+                    "Use different particles (up, out, off, in) and verb bases across questions.",
+                    "Vary contexts: daily life, work, travel — do not repeat the same verb.",
+                    "Mix literal and idiomatic uses where appropriate for the level."
+            );
+            case IDIOMS -> List.of(
+                    "Use different idioms and themes — never repeat the same expression.",
+                    "Vary formal and informal idioms appropriate to the level.",
+                    "Test meaning in context, not dictionary definitions alone."
+            );
+            case PREPOSITIONS -> List.of(
+                    "Vary prepositions of time, place, and abstract relations.",
+                    "Use different collocations — do not repeat the same preposition.",
+                    "Change context: movement, location, and fixed expressions."
+            );
+            case WORD_FORMATION -> List.of(
+                    "Vary prefixes, suffixes, and part-of-speech conversions across questions.",
+                    "Use different base words — do not repeat the same root.",
+                    "Mix noun, verb, adjective, and adverb formation where level allows."
+            );
+            case COLLOCATIONS -> List.of(
+                    "Use different verb–noun and adjective–noun pairs in each question.",
+                    "Vary registers and topics — avoid repeating the same collocation pattern.",
+                    "Test strong collocations, not random word pairs."
+            );
+            case SYNONYMS -> List.of(
+                    "Mix synonym and antonym tasks across the batch.",
+                    "Use different registers and shades of meaning.",
+                    "Do not repeat the same keyword across questions."
+            );
+            case READING -> List.of(
+                    "Use different short text types: notice, message, ad, or paragraph.",
+                    "Vary question focus: main idea, detail, inference, and vocabulary in context.",
+                    "Each question must stand alone — no shared passage between questions."
+            );
+            case DIALOGUES -> List.of(
+                    "Use different situations: shop, work, travel, phone call.",
+                    "Vary speakers' roles and communicative goals.",
+                    "Do not reuse the same dialogue setting twice."
+            );
+            case ERROR_CORRECTION -> List.of(
+                    "Vary error types: tense, agreement, word order, vocabulary, spelling.",
+                    "Use only one clear error per question unless multi-error is explicit.",
+                    "Do not repeat the same mistake pattern across questions."
+            );
+            case TRANSFORMATION -> List.of(
+                    "Vary transformation types: passive, reported speech, conditionals, emphasis.",
+                    "Change structure but keep meaning — use different cue words.",
+                    "Do not repeat the same grammatical transformation twice."
+            );
+            case GAP_FILLING -> List.of(
+                    "Vary gap types: verb form, preposition, linker, or key vocabulary word.",
+                    "Use different sentence patterns and contexts.",
+                    "Only one gap per question unless the format requires more."
+            );
+            case WORD_ORDER -> List.of(
+                    "Vary sentence patterns: questions, negatives, and statements with modifiers.",
+                    "Use different clause elements — subject, verb, object, adverbial.",
+                    "Test one correct word order only; avoid ambiguous arrangements."
+            );
+            case REAL_LIFE -> List.of(
+                    "Vary situations: café, office, street, social media, family.",
+                    "Mix informal, slang, and everyday expressions appropriate to the level.",
+                    "Use realistic spoken-style prompts, not textbook phrasing."
+            );
+        };
     }
 
     public static Entry forDifficulty(Difficulty difficulty) {

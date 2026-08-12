@@ -210,28 +210,7 @@ public class QuestionService {
         String nonce = UUID.randomUUID().toString();
         LOG.debug("Building prompt with nonce: {}", nonce);
 
-        List<String> variationRules = List.of(
-                "different tenses",
-                "different structures",
-                "different clause types",
-                "different vocabulary",
-                "different grammar phenomena",
-                "different subjects/contexts",
-                "different syntax"
-        );
-        String variation = variationRules.get(new Random().nextInt(variationRules.size()));
-
-        List<String> styles = List.of("formal", "informal", "academic", "business", "narrative");
-        String style = styles.get(new Random().nextInt(styles.size()));
-
-        List<String> microTasks = List.of(
-                "include an adverb",
-                "include an object",
-                "include a time expression",
-                "use a verb phrase",
-                "use a real-life context"
-        );
-        String microTask = microTasks.get(new Random().nextInt(microTasks.size()));
+        String variation = PromptLabels.randomVariation(req.getType());
 
         StringBuilder prevBlock = new StringBuilder();
         if (previousQuestions != null && !previousQuestions.isEmpty()) {
@@ -256,8 +235,6 @@ public class QuestionService {
         ctx.put("typeDesc", topic.description());
         ctx.put("prev", prevBlock.toString());
         ctx.put("variation", variation);
-        ctx.put("style", style);
-        ctx.put("task", microTask);
         ctx.put("keywords",
             req.getKeywords() != null && !req.getKeywords().isBlank()
                 ? req.getKeywords()
