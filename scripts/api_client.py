@@ -50,7 +50,7 @@ examples:
 
   python scripts/api_client.py token-info --token sk_user_...
 
-  python scripts/api_client.py questions \\
+  python scripts/api_client.py generate \\
     --token sk_user_... \\
     --provider DEEPSEEK \\
     --count 3 \\
@@ -105,9 +105,9 @@ example:
 example:
   python scripts/api_client.py token-info --token sk_user_...
 """,
-    "questions": """
+    "generate": """
 example:
-  python scripts/api_client.py questions \\
+  python scripts/api_client.py generate \\
     --token sk_user_... \\
     --provider DEEPSEEK \\
     --count 3 \\
@@ -283,7 +283,7 @@ def cmd_token_info(args: argparse.Namespace) -> int:
     return print_response(status, payload, args.pretty)
 
 
-def cmd_questions(args: argparse.Namespace) -> int:
+def cmd_generate(args: argparse.Namespace) -> int:
     token = require_token(args.token, "token", "NQUIZ_USER_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     if args.json_file:
@@ -518,7 +518,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.set_defaults(handler=cmd_token_info)
 
-    p = add_subparser(sub, "questions", "POST /api/questions/generate")
+    p = add_subparser(sub, "generate", "POST /api/questions/generate")
     p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.add_argument("--provider", choices=PROVIDERS)
     p.add_argument("--count", type=int, default=1)
@@ -528,7 +528,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--type", default="GRAMMAR", choices=QUESTION_TYPES)
     p.add_argument("--keywords", default="", help="Comma-separated topic keywords")
     p.add_argument("--json-file", help="Path to JSON file with full POST body (overrides individual args)")
-    p.set_defaults(handler=cmd_questions)
+    p.set_defaults(handler=cmd_generate)
 
     p = add_subparser(sub, "create-user", "POST /admin/tokens/create-user")
     p.add_argument("--admin-token", default=os.environ.get("NQUIZ_ADMIN_TOKEN"))

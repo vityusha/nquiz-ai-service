@@ -93,7 +93,8 @@ class JsonValidatorTest {
                     "question": "Match countries to capitals:",
                     "answers": [
                       {"answer": "France - Paris"},
-                      {"answer": "Germany - Berlin"}
+                      {"answer": "Germany - Berlin"},
+                      {"answer": "Spain - Madrid"}
                     ]
                   }]
                 }
@@ -155,6 +156,26 @@ class JsonValidatorTest {
     }
 
     @Test
+    @DisplayName("Should reject ONE_CORRECT with multiple right answers")
+    void shouldRejectMultipleRightAnswers() throws Exception {
+        JsonNode root = parse("""
+                {
+                  "questions": [{
+                    "question": "Test?",
+                    "answers": [
+                      {"answer": "a", "right": true},
+                      {"answer": "b", "right": true},
+                      {"answer": "c", "right": false}
+                    ]
+                  }]
+                }
+                """);
+
+        List<String> errors = JsonValidator.validateQuestionsArray(root, Mode.ONE_CORRECT);
+        assertTrue(errors.stream().anyMatch(e -> e.contains("exactly one answer must have right=true, found 2")));
+    }
+
+    @Test
     @DisplayName("Should reject ONE_CORRECT with no right answer")
     void shouldRejectNoRightAnswer() throws Exception {
         JsonNode root = parse("""
@@ -170,7 +191,7 @@ class JsonValidatorTest {
                 """);
 
         List<String> errors = JsonValidator.validateQuestionsArray(root, Mode.ONE_CORRECT);
-        assertTrue(errors.stream().anyMatch(e -> e.contains("right=true")));
+        assertTrue(errors.stream().anyMatch(e -> e.contains("exactly one answer must have right=true, found 0")));
     }
 
     @Test
@@ -202,7 +223,7 @@ class JsonValidatorTest {
                 """);
 
         List<String> errors = JsonValidator.validateQuestionsArray(root, Mode.ORDERING);
-        assertTrue(errors.stream().anyMatch(e -> e.contains("at least 2")));
+        assertTrue(errors.stream().anyMatch(e -> e.contains("at least 3")));
     }
 
     @Test
@@ -214,7 +235,8 @@ class JsonValidatorTest {
                     "question": "Match:",
                     "answers": [
                       {"answer": "FranceParis"},
-                      {"answer": "GermanyBerlin"}
+                      {"answer": "GermanyBerlin"},
+                      {"answer": "SpainMadrid"}
                     ]
                   }]
                 }
@@ -237,7 +259,7 @@ class JsonValidatorTest {
                 """);
 
         List<String> errors = JsonValidator.validateQuestionsArray(root, Mode.MATCHING);
-        assertTrue(errors.stream().anyMatch(e -> e.contains("at least 2")));
+        assertTrue(errors.stream().anyMatch(e -> e.contains("at least 3")));
     }
 
     @Test

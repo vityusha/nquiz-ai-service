@@ -1,17 +1,13 @@
 Mode: ORDERING
-The question must ask the user to arrange items in the correct order.
-The "answers" array must contain ONLY the correct ordered items (no incorrect options).
+Items must be arranged in exactly one correct order. If another arrangement is also valid, the question is INVALID — do not generate it.
 
-Example:
-{
-  "questions": [
-    {
-      "question": "Put these events in the correct order:",
-      "answers": [
-        {"answer": "Wake up"},
-        {"answer": "Brush teeth"},
-        {"answer": "Have breakfast"}
-      ]
-    }
-  ]
-}
+Rules:
+- Use ONLY strict unique sequences: chronology, process steps, size/rank, age, dates.
+- FORBIDDEN: arrange separate words into a sentence when {{lang}} has flexible word order
+  (e.g. RUSSIAN, UKRAINIAN, POLISH, GERMAN, CZECH, HINDI) — many valid answers, ungradable.
+- Each answer is ONE short item (max 5 words). Answers = correct sequence only, no distractors.
+- Answer objects: ONLY the "answer" key. Never add "right".
+- Question text must ask to put items in order (e.g. "Put these events in the correct order:").
+- Items must directly test the Focus — never meta-facts (history, etymology, study stages).
+
+Answer format: {"answer":"step1"}, {"answer":"step2"}, ... (order in the array = correct order).

@@ -9,8 +9,11 @@ micronaut:
 
 datasources:
   default:
-    url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db
+    url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db?journal_mode=WAL
     driver-class-name: org.sqlite.JDBC
+    pooled: false
+    connectionProperties:
+      synchronous: NORMAL
 
 flyway:
   enabled: true
@@ -21,9 +24,6 @@ logger:
   levels:
     com.lainlab: INFO
     root: WARN
-
-payment:
-  webhook-secret: ${PAYMENT_WEBHOOK_SECRET:}
 
 endpoints:
   health:

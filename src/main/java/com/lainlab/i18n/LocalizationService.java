@@ -13,6 +13,9 @@ public class LocalizationService {
     private static final UTF8Control CONTROL = new UTF8Control();
 
     public String get(String key, Locale locale) {
+        if (locale == null) {
+            locale = Locale.ENGLISH;
+        }
         ResourceBundle bundle = ResourceBundle.getBundle(BASE_NAME, locale, CONTROL);
         return bundle.containsKey(key) ? bundle.getString(key) : "??" + key + "??";
     }

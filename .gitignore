@@ -8,6 +8,12 @@ out/
 test_output.txt
 __pycache__/
 
+# Eclipse plugin
+.project
+.factorypath
+.classpath
+.settings/
+
 # IDE
 .idea/
 *.iml
@@ -36,4 +42,5 @@ logs/
 Thumbs.db
 
 # Others
-scripts/*.json
+scripts/create_user.*
+tmp/

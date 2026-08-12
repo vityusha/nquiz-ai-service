@@ -7,8 +7,10 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.lainlab.db.*;
 import com.lainlab.dto.*;
+import com.lainlab.i18n.LocalizationService;
 import com.lainlab.model.Mode;
 import com.lainlab.model.Provider;
+import com.lainlab.model.QuestionType;
 import com.lainlab.util.JsonFixer;
 import com.lainlab.util.JsonValidator;
 import com.lainlab.util.PromptBuilder;
@@ -39,6 +41,9 @@ public class QuestionService {
 
     @Inject
     AiResponseLogRepository aiResponseLogRepository;
+
+    @Inject
+    LocalizationService i18n;
 
     // Logger
     private static final Logger LOG = LoggerFactory.getLogger(QuestionService.class);
@@ -217,7 +222,6 @@ public class QuestionService {
                 "include an adverb",
                 "include an object",
                 "include a time expression",
-                "make one question longer",
                 "use a verb phrase",
                 "use a real-life context"
         );
@@ -225,7 +229,7 @@ public class QuestionService {
 
         StringBuilder prevBlock = new StringBuilder();
         if (previousQuestions != null && !previousQuestions.isEmpty()) {
-            int start = Math.max(0, previousQuestions.size() - 3);
+            int start = Math.max(0, previousQuestions.size() - 2);
             for (int i = start; i < previousQuestions.size(); i++) {
                 prevBlock.append("- ").append(previousQuestions.get(i)).append("\n");
             }
@@ -233,17 +237,26 @@ public class QuestionService {
             prevBlock.append("none\n");
         }
 
+        QuestionType qt = req.getType();
+        String typeKey = qt.name();
+        String typeTitle = i18n.get("type." + typeKey, null);
+        String typeDesc  = i18n.get("type." + typeKey + ".desc", null);
+
         Map<String, Object> ctx = new HashMap<>();
         ctx.put("nonce", nonce);
         ctx.put("count", count);
         ctx.put("lang", req.getLanguage());
         ctx.put("diff", req.getDifficulty());
-        ctx.put("type", req.getType());
+        ctx.put("typeTitle", typeTitle);
+        ctx.put("typeDesc", typeDesc);
         ctx.put("prev", prevBlock.toString());
         ctx.put("variation", variation);
         ctx.put("style", style);
         ctx.put("task", microTask);
-        ctx.put("keywords", req.getKeywords());
+        ctx.put("keywords",
+            req.getKeywords() != null && !req.getKeywords().isBlank()
+                ? req.getKeywords()
+                : "none — choose topic freely");
 
         PromptBuilder.PromptBundle bundle = PromptBuilder.build(
                 promptCache.system(req.getMode()),
