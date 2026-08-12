@@ -1,5 +1,6 @@
 package com.lainlab.service;
 
+import com.lainlab.db.ProcessedWebhookEventRepository;
 import com.lainlab.db.Token;
 import com.lainlab.db.TokenRepository;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
@@ -29,10 +30,14 @@ class PaymentServiceTest {
     @Inject
     TokenRepository tokenRepository;
 
+    @Inject
+    ProcessedWebhookEventRepository processedWebhookEventRepository;
+
     private Token testToken;
 
     @BeforeEach
     void setUp() {
+        processedWebhookEventRepository.deleteAll();
         tokenRepository.deleteAll();
 
         testToken = new Token();
@@ -60,9 +65,19 @@ class PaymentServiceTest {
     }
 
     @Test
+    @DisplayName("topUp with zero amount should not change balance")
+    void testTopUpZeroAmountIsNoOp() {
+        Token result = paymentService.topUp(testToken, 0);
+
+        assertEquals(100, result.getBalance());
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(100, fromDb.getBalance());
+    }
+
+    @Test
     @DisplayName("handleWebhook should reject invalid signature")
     void testRejectsInvalidSignature() {
-        String body = "{\"metadata\":{\"token\":\"sk_user_payment_test\"},\"amount\":50}";
+        String body = webhookBody("evt_invalid_sig", "sk_user_payment_test", 50);
         Map<String, String> headers = Map.of("stripe-signature", "t=123,v1=invalidsig");
 
         assertThrows(SecurityException.class, () ->
@@ -76,14 +91,8 @@ class PaymentServiceTest {
     @Test
     @DisplayName("handleWebhook should accept valid HMAC-SHA256 signature")
     void testAcceptsValidSignature() throws Exception {
-        long timestamp = System.currentTimeMillis() / 1000;
-        String body = "{\"metadata\":{\"token\":\"sk_user_payment_test\"},\"amount\":50}";
-
-        String payload = timestamp + "." + body;
-        String sig = hmacSha256(WEBHOOK_SECRET, payload);
-        String sigHeader = "t=" + timestamp + ",v1=" + sig;
-
-        Map<String, String> headers = Map.of("stripe-signature", sigHeader);
+        String body = webhookBody("evt_test_001", "sk_user_payment_test", 50);
+        Map<String, String> headers = signedHeaders(body);
 
         paymentService.handleWebhook(body, headers);
 
@@ -94,7 +103,7 @@ class PaymentServiceTest {
     @Test
     @DisplayName("handleWebhook should reject missing stripe-signature header")
     void testRejectsMissingSigHeader() {
-        String body = "{\"metadata\":{\"token\":\"sk_user_payment_test\"},\"amount\":50}";
+        String body = webhookBody("evt_test_002", "sk_user_payment_test", 50);
         Map<String, String> headers = Map.of();
 
         assertThrows(SecurityException.class, () ->
@@ -106,7 +115,7 @@ class PaymentServiceTest {
     @DisplayName("handleWebhook should reject old timestamp (replay protection)")
     void testRejectsOldTimestamp() throws Exception {
         long oldTimestamp = 1000000000;
-        String body = "{\"metadata\":{\"token\":\"sk_user_payment_test\"},\"amount\":50}";
+        String body = webhookBody("evt_test_003", "sk_user_payment_test", 50);
 
         String payload = oldTimestamp + "." + body;
         String sig = hmacSha256(WEBHOOK_SECRET, payload);
@@ -117,6 +126,72 @@ class PaymentServiceTest {
         assertThrows(SecurityException.class, () ->
             paymentService.handleWebhook(body, headers)
         );
+    }
+
+    @Test
+    @DisplayName("handleWebhook should reject missing metadata.token")
+    void testRejectsMissingMetadataToken() throws Exception {
+        String body = "{\"id\":\"evt_test_004\",\"metadata\":{},\"amount\":50}";
+        Map<String, String> headers = signedHeaders(body);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            paymentService.handleWebhook(body, headers)
+        );
+
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(100, fromDb.getBalance());
+    }
+
+    @Test
+    @DisplayName("handleWebhook should reject missing event id")
+    void testRejectsMissingEventId() throws Exception {
+        String body = "{\"metadata\":{\"token\":\"sk_user_payment_test\"},\"amount\":50}";
+        Map<String, String> headers = signedHeaders(body);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            paymentService.handleWebhook(body, headers)
+        );
+
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(100, fromDb.getBalance());
+    }
+
+    @Test
+    @DisplayName("handleWebhook should reject unknown token")
+    void testRejectsUnknownToken() throws Exception {
+        String body = webhookBody("evt_test_005", "sk_user_does_not_exist", 50);
+        Map<String, String> headers = signedHeaders(body);
+
+        assertThrows(IllegalStateException.class, () ->
+            paymentService.handleWebhook(body, headers)
+        );
+
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(100, fromDb.getBalance());
+    }
+
+    @Test
+    @DisplayName("handleWebhook should be idempotent for duplicate event id")
+    void testWebhookIdempotentDuplicateEvent() throws Exception {
+        String body = webhookBody("evt_test_dup", "sk_user_payment_test", 50);
+        Map<String, String> headers = signedHeaders(body);
+
+        paymentService.handleWebhook(body, headers);
+        paymentService.handleWebhook(body, headers);
+
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(150, fromDb.getBalance(), "Duplicate webhook must not double-credit");
+    }
+
+    private static String webhookBody(String eventId, String token, int amount) {
+        return "{\"id\":\"" + eventId + "\",\"metadata\":{\"token\":\"" + token + "\"},\"amount\":" + amount + "}";
+    }
+
+    private static Map<String, String> signedHeaders(String body) throws Exception {
+        long timestamp = System.currentTimeMillis() / 1000;
+        String payload = timestamp + "." + body;
+        String sig = hmacSha256(WEBHOOK_SECRET, payload);
+        return Map.of("stripe-signature", "t=" + timestamp + ",v1=" + sig);
     }
 
     private static String hmacSha256(String secret, String data) throws Exception {

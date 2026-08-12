@@ -1,25 +1,12 @@
 Mode: MATCHING
-Generate questions where the user matches SHORT WORDS or PHRASES (not full sentences).
+User matches left column A with right column B.
 
-Each answer is a correct pair of two related items separated by " - " (space-hyphen-space).
-The answer array contains ONLY correct pairs.
+Rules:
+- Each answer is one correct pair: "left - right" (space-hyphen-space).
+- All left items distinct; all right items distinct.
+- "answers" = ONLY correct pairs. No wrong options. No "right" field.
+- Do NOT create multiple-choice or fill-in-the-blank questions.
+- Question text must ask to match (e.g. "Match each word with its meaning:").
 
-What to match:
-- Word and its definition: "procrastinate - to delay unnecessarily"
-- Word and its synonym: "happy - joyful"
-- Word and its antonym: "hot - cold"
-- Verb and its object: "read - book"
-
-Example:
-{
-  "questions": [
-    {
-      "question": "Match the English word with its antonyms:",
-      "answers": [
-        {"answer": "hot - cold"},
-        {"answer": "dry - wet"},
-        {"answer": "rich - poor"}
-      ]
-    }
-  ]
-}
+Pair ideas: word–definition, synonym, antonym, verb–object.
+Answer format: {"answer":"left - right"}

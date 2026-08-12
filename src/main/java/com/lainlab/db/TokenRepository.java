@@ -19,6 +19,12 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
     @Query("UPDATE tokens SET balance = balance - :count, total = total + :count WHERE id = :tokenId AND balance >= :count")
     int chargeBalance(long tokenId, int count);
 
+    @Query("UPDATE tokens SET balance = balance + :count, total = total - :count WHERE id = :tokenId AND total >= :count")
+    int refundBalance(long tokenId, int count);
+
+    @Query("UPDATE tokens SET balance = balance + :amount WHERE id = :tokenId")
+    int addBalance(long tokenId, int amount);
+
     @Query("SELECT COUNT(*) FROM tokens WHERE admin != 0")
     long countAdmins();
 

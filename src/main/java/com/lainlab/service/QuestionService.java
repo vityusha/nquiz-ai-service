@@ -13,6 +13,7 @@ import com.lainlab.util.JsonFixer;
 import com.lainlab.util.JsonValidator;
 import com.lainlab.util.PromptBuilder;
 import com.lainlab.util.PromptCache;
+import com.lainlab.util.PromptLabels;
 import io.micronaut.core.async.publisher.Publishers;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -108,9 +109,18 @@ public class QuestionService {
             if (cached != null) {
                 LOG.info("Cache HIT for key {} (IP {}), returning {} questions", key, ip, cached.getQuestions().size());
 
+                reserveGenerationCharge(httpRequest, req);
+
                 ipHistory.asMap()
                         .computeIfAbsent(ip, k -> ConcurrentHashMap.newKeySet())
                         .add(key);
+
+                Mode mode = req.getMode();
+                for (QuestionResponse q : cached.getQuestions()) {
+                    q.setMode(mode);
+                }
+
+                saveLogEntry(httpRequest, ip, req, cached);
 
                 return Publishers.just(cached);
             }
@@ -127,6 +137,8 @@ public class QuestionService {
         LLMProvider provider = getProvider(req.getProvider());
         LOG.debug("Calling LLM provider: {}", req.getProvider());
 
+        GenerationCharge charge = reserveGenerationCharge(httpRequest, req);
+
         // ---------- Reactive call with retry (Micronaut 4 + Reactor) ----------
         return Flux.defer(() -> {
             try {
@@ -140,6 +152,7 @@ public class QuestionService {
                         .onRetryExhaustedThrow((spec, signal) ->
                                 new RuntimeException("LLM provider unavailable after retries: " + signal.failure().getMessage(), signal.failure()))
                 )
+                .doOnError(e -> releaseGenerationCharge(charge))
                 .map(llm -> {
                     LOG.debug("LLM Response received: {}", llm.content().substring(0, Math.min(200, llm.content().length())) + (llm.content().length() > 200 ? "..." : ""));
 
@@ -185,8 +198,6 @@ public class QuestionService {
                             .computeIfAbsent(ip, k -> ConcurrentHashMap.newKeySet())
                             .add(key);
 
-                    chargeBalance(httpRequest, req);
-
                     // Save log entry
                     saveLogEntry(httpRequest, ip, req, response);
 
@@ -199,33 +210,11 @@ public class QuestionService {
         String nonce = UUID.randomUUID().toString();
         LOG.debug("Building prompt with nonce: {}", nonce);
 
-        List<String> variationRules = List.of(
-                "different tenses",
-                "different structures",
-                "different clause types",
-                "different vocabulary",
-                "different grammar phenomena",
-                "different subjects/contexts",
-                "different syntax"
-        );
-        String variation = variationRules.get(new Random().nextInt(variationRules.size()));
-
-        List<String> styles = List.of("formal", "informal", "academic", "business", "narrative");
-        String style = styles.get(new Random().nextInt(styles.size()));
-
-        List<String> microTasks = List.of(
-                "include an adverb",
-                "include an object",
-                "include a time expression",
-                "make one question longer",
-                "use a verb phrase",
-                "use a real-life context"
-        );
-        String microTask = microTasks.get(new Random().nextInt(microTasks.size()));
+        String variation = PromptLabels.randomVariation(req.getType());
 
         StringBuilder prevBlock = new StringBuilder();
         if (previousQuestions != null && !previousQuestions.isEmpty()) {
-            int start = Math.max(0, previousQuestions.size() - 3);
+            int start = Math.max(0, previousQuestions.size() - 2);
             for (int i = start; i < previousQuestions.size(); i++) {
                 prevBlock.append("- ").append(previousQuestions.get(i)).append("\n");
             }
@@ -233,17 +222,23 @@ public class QuestionService {
             prevBlock.append("none\n");
         }
 
+        PromptLabels.Entry diff = PromptLabels.forDifficulty(req.getDifficulty());
+        PromptLabels.Entry topic = PromptLabels.forQuestionType(req.getType());
+
         Map<String, Object> ctx = new HashMap<>();
         ctx.put("nonce", nonce);
         ctx.put("count", count);
         ctx.put("lang", req.getLanguage());
-        ctx.put("diff", req.getDifficulty());
-        ctx.put("type", req.getType());
+        ctx.put("diffTitle", diff.title());
+        ctx.put("diffDesc", diff.description());
+        ctx.put("typeTitle", topic.title());
+        ctx.put("typeDesc", topic.description());
         ctx.put("prev", prevBlock.toString());
         ctx.put("variation", variation);
-        ctx.put("style", style);
-        ctx.put("task", microTask);
-        ctx.put("keywords", req.getKeywords());
+        ctx.put("keywords",
+            req.getKeywords() != null && !req.getKeywords().isBlank()
+                ? req.getKeywords()
+                : "none — choose topic freely");
 
         PromptBuilder.PromptBundle bundle = PromptBuilder.build(
                 promptCache.system(req.getMode()),
@@ -296,15 +291,30 @@ public class QuestionService {
         };
     }
 
-    private void chargeBalance(HttpRequest<?> request, QuestionRequest req) {
-        if(request == null)
-            return;
+    private record GenerationCharge(Long tokenId, int count, boolean active) {
+        static GenerationCharge none() {
+            return new GenerationCharge(null, 0, false);
+        }
+    }
+
+    /**
+     * Atomically reserves balance before an LLM call. Admin tokens are not charged.
+     * On generation failure, call {@link #releaseGenerationCharge}.
+     */
+    private GenerationCharge reserveGenerationCharge(HttpRequest<?> request, QuestionRequest req) {
+        if (request == null) {
+            return GenerationCharge.none();
+        }
 
         Token token = request.getAttribute("token", Token.class)
                 .orElseThrow(() -> new IllegalStateException("Token missing in request"));
 
-        int count = req.getCount();
+        if (token.isAdmin()) {
+            LOG.debug("Skipping balance reservation for admin token {}", token.getId());
+            return GenerationCharge.none();
+        }
 
+        int count = req.getCount();
         int updated = tokenRepository.chargeBalance(token.getId(), count);
         if (updated == 0) {
             LOG.error("Insufficient balance: need {} questions, token ID: {}", count, token.getId());
@@ -316,8 +326,23 @@ public class QuestionService {
         token.setBalance(fresh.getBalance());
         token.setTotal(fresh.getTotal());
 
-        LOG.info("Balance charged successfully: {} questions deducted, token ID: {}, new balance: {}, total requested: {}",
-                 count, token.getId(), token.getBalance(), token.getTotal());
+        LOG.info("Balance reserved: {} questions, token ID: {}, new balance: {}",
+                count, token.getId(), token.getBalance());
+
+        return new GenerationCharge(token.getId(), count, true);
+    }
+
+    private void releaseGenerationCharge(GenerationCharge charge) {
+        if (!charge.active()) {
+            return;
+        }
+
+        int refunded = tokenRepository.refundBalance(charge.tokenId(), charge.count());
+        if (refunded == 0) {
+            LOG.error("Failed to refund {} questions for token ID {}", charge.count(), charge.tokenId());
+        } else {
+            LOG.info("Balance refunded: {} questions, token ID: {}", charge.count(), charge.tokenId());
+        }
     }
 
     private void saveLogEntry(HttpRequest<?> request, String ip, QuestionRequest req, QuestionResponseList response) {

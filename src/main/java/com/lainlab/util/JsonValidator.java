@@ -36,7 +36,7 @@ public class JsonValidator {
         for (int i = 0; i < arr.size(); i++) {
             JsonNode q = arr.get(i);
             switch (mode) {
-                case Mode.ONE_CORRECT, Mode.MULTI_CORRECT -> validateSingleQuestion(q, "questions[" + i + "]", errors);
+                case Mode.ONE_CORRECT, Mode.MULTI_CORRECT -> validateSingleQuestion(q, "questions[" + i + "]", mode, errors);
                 case Mode.ORDERING -> validateOrderingQuestion(q, "questions[" + i + "]", errors);
                 case Mode.MATCHING -> validateMatchingQuestion(q, "questions[" + i + "]", errors);
             }
@@ -48,6 +48,7 @@ public class JsonValidator {
 
     private static void validateSingleQuestion(JsonNode node,
                                                String prefix,
+                                               Mode mode,
                                                List<String> errors) {
 
         // question
@@ -67,7 +68,7 @@ public class JsonValidator {
             return;
         }
 
-        boolean hasRight = false;
+        int rightCount = 0;
 
         for (int i = 0; i < answers.size(); i++) {
             JsonNode ans = answers.get(i);
@@ -79,11 +80,15 @@ public class JsonValidator {
             if (!ans.has("right") || !ans.get("right").isBoolean()) {
                 errors.add(prefix + ".answers[" + i + "]: missing or invalid 'right'");
             } else if (ans.get("right").asBoolean()) {
-                hasRight = true;
+                rightCount++;
             }
         }
 
-        if (!hasRight) {
+        if (mode == Mode.ONE_CORRECT) {
+            if (rightCount != 1) {
+                errors.add(prefix + ": exactly one answer must have right=true, found " + rightCount);
+            }
+        } else if (rightCount == 0) {
             errors.add(prefix + ": no answer marked as right=true");
         }
     }
@@ -104,8 +109,8 @@ public class JsonValidator {
         }
 
         ArrayNode answers = (ArrayNode) node.get("answers");
-        if (answers.size() < 2) {
-            errors.add(prefix + ": 'answers' must contain at least 2 items");
+        if (answers.size() < 3) {
+            errors.add(prefix + ": 'answers' must contain at least 3 items");
             return;
         }
 
@@ -139,8 +144,8 @@ public class JsonValidator {
         }
 
         ArrayNode answers = (ArrayNode) node.get("answers");
-        if (answers.size() < 2) {
-            errors.add(prefix + ": 'answers' must contain at least 2 items");
+        if (answers.size() < 3) {
+            errors.add(prefix + ": 'answers' must contain at least 3 items");
             return;
         }
 
