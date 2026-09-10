@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -124,21 +124,116 @@
             color: #cbd5e1;
             border: 1px solid #334155;
         }
+
+        .lang-switcher {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 2;
+        }
+
+        .lang-btn {
+            background-color: #1e293b;
+            color: #cbd5e1;
+            border: 1px solid #334155;
+            padding: 0.4rem 0.9rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .lang-btn:hover {
+            border-color: #60a5fa;
+        }
+
+        .lang-btn.active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: #ffffff;
+        }
     </style>
 </head>
 <body>
+<div class="lang-switcher">
+    <button class="lang-btn" data-lang="ru">RU</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="it">IT</button>
+</div>
 <div class="bg-blob"></div>
 <div class="container">
     <h1>NQuiz AI</h1>
-    <p>A high-performance microservice for processing and generating quizzes powered by artificial intelligence.</p>
+    <p data-i18n="tagline">A high-performance microservice for processing and generating quizzes powered by artificial intelligence.</p>
 
     <div class="status-badge">
         <div class="pulse"></div>
-        Operational
+        <span data-i18n="status">Operational</span>
     </div>
 
     <div>
         <h2><a href="https://lainlab.com/?lang=en" style="text-decoration: none;">Lain S.r.l.</a></h2>
     </div>
+</div>
+<script>
+    const I18N = {
+        en: {
+            title: "NQuiz AI Service",
+            tagline: "A high-performance microservice for processing and generating quizzes powered by artificial intelligence.",
+            status: "Operational"
+        },
+        ru: {
+            title: "NQuiz AI Service",
+            tagline: "Высокопроизводительный микросервис для обработки и генерации викторин на основе искусственного интеллекта.",
+            status: "Работает"
+        },
+        it: {
+            title: "NQuiz AI Service",
+            tagline: "Microservizio ad alte prestazioni per elaborare e generare quiz basati sull'intelligenza artificiale.",
+            status: "Operativo"
+        }
+    };
+
+    const SUPPORTED = ["ru", "en", "it"];
+
+    function detectLang() {
+        const fromUrl = new URLSearchParams(window.location.search).get("lang");
+        if (fromUrl && SUPPORTED.includes(fromUrl)) return fromUrl;
+        const stored = localStorage.getItem("lang");
+        if (stored && SUPPORTED.includes(stored)) return stored;
+        const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+        for (const tag of langs) {
+            const base = (tag || "en").toLowerCase().split("-")[0];
+            if (SUPPORTED.includes(base)) return base;
+        }
+        return "en";
+    }
+
+    function setLang(lang) {
+        const dict = I18N[lang];
+        document.documentElement.lang = lang;
+        document.title = dict.title;
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+            el.textContent = dict[el.dataset.i18n];
+        });
+        document.querySelectorAll(".lang-btn").forEach(function (btn) {
+            btn.classList.toggle("active", btn.dataset.lang === lang);
+        });
+        localStorage.setItem("lang", lang);
+        const url = new URL(window.location);
+        url.searchParams.set("lang", lang);
+        window.history.replaceState({}, "", url);
+    }
+
+    const current = detectLang();
+    document.querySelectorAll(".lang-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            setLang(btn.dataset.lang);
+        });
+    });
+    setLang(current);
+</script>
 </body>
 </html>
