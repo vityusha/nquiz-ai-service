@@ -41,8 +41,10 @@ llm:
     access-id: ${OPENAI_ACCESS_ID:}
     api-key: ${OPENAI_API_KEY:}
   deepseek:
+    # DeepSeek V4.1 Flash is now available on the DeepSeek API with native multimodal support. 
+    # Change the model name to deepseek-flash to call the latest V4.1 Flash model
     url: https://api.deepseek.com/chat/completions
-    model: deepseek-v4-flash
+    model: deepseek-flash
     access-id: ${DEEPSEEK_ACCESS_ID:}
     api-key: ${DEEPSEEK_API_KEY:}
   gemini:
