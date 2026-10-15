@@ -362,7 +362,7 @@ def cmd_deactivate(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "POST",
-        f"/admin/tokens/deactivate/{args.license-no}",
+        f"/admin/tokens/deactivate/{args.license_no}",
         token=admin_token,
     )
     return print_response(status, payload, args.pretty)
@@ -373,7 +373,7 @@ def cmd_activate(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "POST",
-        f"/admin/tokens/activate/{args.license-no}",
+        f"/admin/tokens/activate/{args.license_no}",
         token=admin_token,
     )
     return print_response(status, payload, args.pretty)
@@ -398,7 +398,7 @@ def cmd_get_token(args: argparse.Namespace) -> int:
     client = ApiClient(args.base_url, args.timeout)
     status, payload = client.request(
         "GET",
-        f"/admin/tokens/info/{args.license-no}",
+        f"/admin/tokens/info/{args.license_no}",
         token=admin_token)
     return print_response(status, payload, args.pretty)
 
