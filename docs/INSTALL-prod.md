@@ -56,7 +56,12 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
-
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+        
   # Log via ssh -L -i .ssh/PRIVATE_KEY 8888:localhost:8888 deploy@SERVER_IP and http://localhost:8888
   dozzle:
     image: amir20/dozzle:latest
