@@ -24,7 +24,7 @@ class SecurityHeadersFilterTest {
     @Test
     @DisplayName("Adds security headers to successful responses")
     void addsHeadersOnSuccess() {
-        HttpResponse<String> resp = client.toBlocking().exchange(HttpRequest.GET("/api/capabilities"), String.class);
+        HttpResponse<String> resp = client.toBlocking().exchange(HttpRequest.GET("/health"), String.class);
         assertEquals(HttpStatus.OK, resp.getStatus());
         assertEquals("nosniff", resp.header("X-Content-Type-Options"));
         assertEquals("DENY", resp.header("X-Frame-Options"));

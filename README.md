@@ -17,13 +17,13 @@ Micronaut service that generates quiz questions with LLM providers for Nibelung 
 |--------|------|------|-------------|
 | `POST` | `/api/questions/generate` | Bearer token | Generate questions via LLM |
 | `POST` | `/api/questions/store` | Bearer token | Save questions to local DB |
-| `GET` | `/api/questions/get` | Bearer token | Get questions from DB (filter by mode/difficulty/type/language/keywords) |
+| `GET` | `/api/questions/get` | None | Get questions from DB (filter by mode/difficulty/type/language/keywords) |
 
 ### Capabilities
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| `GET` | `/api/capabilities?lang=en` | None | List supported languages, types, difficulties, modes, providers |
+| `GET` | `/api/capabilities?lang=en` | Bearer token | List supported languages, types, difficulties, modes, providers |
 
 ### Token (user)
 

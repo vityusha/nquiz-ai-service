@@ -46,7 +46,7 @@ MAIN_EXAMPLES = """
 examples:
   python scripts/api_client.py health --pretty
 
-  python scripts/api_client.py capabilities --lang en
+  python scripts/api_client.py capabilities --token sk_user_... --lang en
 
   python scripts/api_client.py token-info --token sk_user_...
 
@@ -99,7 +99,7 @@ example:
 """,
     "capabilities": """
 example:
-  python scripts/api_client.py capabilities --lang en
+  python scripts/api_client.py capabilities --token sk_user_... --lang en
 """,
     "token-info": """
 example:
@@ -270,9 +270,10 @@ def cmd_health(args: argparse.Namespace) -> int:
 
 
 def cmd_capabilities(args: argparse.Namespace) -> int:
+    token = require_token(args.token, "token", "NQUIZ_USER_TOKEN")
     client = ApiClient(args.base_url, args.timeout)
     query = {"lang": args.lang} if args.lang else None
-    status, payload = client.request("GET", "/api/capabilities", query=query)
+    status, payload = client.request("GET", "/api/capabilities", token=token, query=query)
     return print_response(status, payload, args.pretty)
 
 
@@ -511,6 +512,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_subparser(sub, "health", "GET /health").set_defaults(handler=cmd_health)
 
     p = add_subparser(sub, "capabilities", "GET /api/capabilities")
+    p.add_argument("--token", default=os.environ.get("NQUIZ_USER_TOKEN"), help="User API token (Bearer)")
     p.add_argument("--lang", choices=("en", "ru"), help="Response language")
     p.set_defaults(handler=cmd_capabilities)
 
