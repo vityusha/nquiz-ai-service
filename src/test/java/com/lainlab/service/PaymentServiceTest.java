@@ -183,6 +183,42 @@ class PaymentServiceTest {
         assertEquals(150, fromDb.getBalance(), "Duplicate webhook must not double-credit");
     }
 
+    @Test
+    @DisplayName("handleWebhook should reject amount above the top-up limit")
+    void testRejectsAmountAboveLimit() throws Exception {
+        String body = webhookBody("evt_test_big", "sk_user_payment_test", PaymentService.MAX_TOPUP_AMOUNT + 1);
+        Map<String, String> headers = signedHeaders(body);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            paymentService.handleWebhook(body, headers)
+        );
+
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(100, fromDb.getBalance());
+    }
+
+    @Test
+    @DisplayName("handleWebhook should reject amount that overflows int")
+    void testRejectsOverflowAmount() throws Exception {
+        String body = "{\"id\":\"evt_test_overflow\",\"metadata\":{\"token\":\"sk_user_payment_test\"},\"amount\":99999999999}";
+        Map<String, String> headers = signedHeaders(body);
+
+        assertThrows(IllegalArgumentException.class, () ->
+            paymentService.handleWebhook(body, headers)
+        );
+
+        Token fromDb = tokenRepository.findById(testToken.getId()).orElseThrow();
+        assertEquals(100, fromDb.getBalance());
+    }
+
+    @Test
+    @DisplayName("topUp should reject amount above the limit")
+    void testTopUpRejectsAmountAboveLimit() {
+        assertThrows(IllegalArgumentException.class, () ->
+            paymentService.topUp(testToken, PaymentService.MAX_TOPUP_AMOUNT + 1)
+        );
+    }
+
     private static String webhookBody(String eventId, String token, int amount) {
         return "{\"id\":\"" + eventId + "\",\"metadata\":{\"token\":\"" + token + "\"},\"amount\":" + amount + "}";
     }

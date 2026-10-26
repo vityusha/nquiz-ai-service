@@ -36,7 +36,7 @@ public class PaymentController {
             return HttpResponse.status(HttpStatus.FORBIDDEN, "Invalid signature");
         } catch (IllegalArgumentException e) {
             LOG.warn("Webhook rejected (bad payload): {}", e.getMessage());
-            return HttpResponse.badRequest(e.getMessage());
+            return HttpResponse.badRequest("Invalid webhook payload");
         } catch (Exception e) {
             LOG.error("Error processing payment webhook", e);
             return HttpResponse.serverError();

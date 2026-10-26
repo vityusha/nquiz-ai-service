@@ -25,6 +25,7 @@ import java.util.Optional;
 public class TokenAdminController {
 
     private static final Logger LOG = LoggerFactory.getLogger(TokenAdminController.class);
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     @Inject
     TokenRepository tokens;
@@ -198,8 +199,9 @@ public class TokenAdminController {
 
     public static String generateApiKey(boolean admin) {
         String prefix = admin ? "sk_admin_" : "sk_user_";
-        String random = Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(SecureRandom.getSeed(32));
+        byte[] bytes = new byte[32];
+        RANDOM.nextBytes(bytes);
+        String random = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
         return prefix + random;
     }
 
@@ -215,18 +217,6 @@ public class TokenAdminController {
             @Body TopUpRequest req,
             HttpRequest<?> httpRequest
     ) {
-        Token token;
-        try {
-            int licenseNo = Integer.parseInt(identifier);
-            token = tokens.findByLicenseNo(licenseNo)
-                    .orElseThrow(() -> new RuntimeException("Token with license " + licenseNo + " not found"));
-            LOG.info("Processing topup for license: {}, amount: {}", licenseNo, req.getAmount());
-        } catch (NumberFormatException e) {
-            token = tokens.findByToken(identifier)
-                    .orElseThrow(() -> new RuntimeException("Token not found: " + identifier));
-            LOG.info("Processing topup for token: {}, amount: {}", identifier, req.getAmount());
-        }
-
         Token admin = httpRequest.getAttribute("token", Token.class)
                 .orElseThrow(() -> new RuntimeException("Missing admin token"));
 
@@ -234,6 +224,26 @@ public class TokenAdminController {
             LOG.warn("Unauthorized topup attempt by token ID: {}", admin.getId());
             return HttpResponse.unauthorized();
         }
+
+        if (req.getAmount() > PaymentService.MAX_TOPUP_AMOUNT) {
+            LOG.warn("Topup rejected: amount {} exceeds limit {}", req.getAmount(), PaymentService.MAX_TOPUP_AMOUNT);
+            return HttpResponse.badRequest("amount must not exceed " + PaymentService.MAX_TOPUP_AMOUNT);
+        }
+
+        Optional<Token> found;
+        try {
+            int licenseNo = Integer.parseInt(identifier);
+            found = tokens.findByLicenseNo(licenseNo);
+            LOG.info("Processing topup for license: {}, amount: {}", licenseNo, req.getAmount());
+        } catch (NumberFormatException e) {
+            found = tokens.findByToken(identifier);
+            LOG.info("Processing topup by token value, amount: {}", req.getAmount());
+        }
+        if (found.isEmpty()) {
+            LOG.warn("Topup failed: token not found");
+            return HttpResponse.notFound();
+        }
+        Token token = found.get();
 
         Token updated = paymentService.topUp(token, req.getAmount());
         LOG.info("Successfully topped up token ID: {}, new balance: {}", token.getId(), updated.getBalance());

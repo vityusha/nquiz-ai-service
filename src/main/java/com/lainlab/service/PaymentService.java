@@ -35,12 +35,17 @@ public class PaymentService {
     private static final Logger LOG = LoggerFactory.getLogger(PaymentService.class);
     private static final String HMAC_SHA256 = "HmacSHA256";
     private static final long MAX_TIMESTAMP_AGE_SECONDS = 300;
+    /** Upper bound for a single top-up (manual or webhook). */
+    public static final int MAX_TOPUP_AMOUNT = 100_000;
     private final ObjectMapper mapper = new ObjectMapper();
 
     // -----------------------------
     // Manual top-up
     // -----------------------------
     public Token topUp(Token token, int amount) {
+        if (amount > MAX_TOPUP_AMOUNT) {
+            throw new IllegalArgumentException("Top-up amount exceeds limit of " + MAX_TOPUP_AMOUNT);
+        }
         if (amount <= 0) {
             return tokens.findById(token.getId())
                     .orElseThrow(() -> new IllegalStateException("Token not found: " + token.getId()));
@@ -85,7 +90,16 @@ public class PaymentService {
         }
 
         String tokenValue = json.path("metadata").path("token").asText(null);
-        int amount = Math.max(json.path("amount").asInt(0), 0);
+        JsonNode amountNode = json.path("amount");
+        if (!amountNode.canConvertToInt()) {
+            LOG.error("Webhook amount is not a valid integer: {}", amountNode);
+            throw new IllegalArgumentException("Webhook amount is invalid");
+        }
+        int amount = Math.max(amountNode.asInt(0), 0);
+        if (amount > MAX_TOPUP_AMOUNT) {
+            LOG.error("Webhook amount {} exceeds limit {}", amount, MAX_TOPUP_AMOUNT);
+            throw new IllegalArgumentException("Webhook amount exceeds limit");
+        }
 
         if (tokenValue == null || tokenValue.isBlank()) {
             LOG.error("Webhook missing metadata.token");
@@ -94,8 +108,8 @@ public class PaymentService {
 
         Token token = tokens.findByToken(tokenValue)
                 .orElseThrow(() -> {
-                    LOG.error("Webhook token not found: {}", tokenValue);
-                    return new IllegalStateException("Token not found: " + tokenValue);
+                    LOG.error("Webhook token not found");
+                    return new IllegalStateException("Webhook token not found");
                 });
 
         int claimed = processedWebhookEvents.tryInsert(eventId, token.getId(), amount);

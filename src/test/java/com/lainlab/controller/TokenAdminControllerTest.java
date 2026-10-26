@@ -255,6 +255,59 @@ class TokenAdminControllerTest {
     }
 
     @Test
+    @DisplayName("Topup above the limit should be rejected with 400")
+    void testTopupAboveLimitRejected() {
+        // TopUpRequest is deserialize-only, so send a plain map
+        var req = java.util.Map.of("amount", com.lainlab.service.PaymentService.MAX_TOPUP_AMOUNT + 1);
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () ->
+                client.toBlocking().exchange(
+                        HttpRequest.POST("/admin/tokens/" + LICENSE_NO + "/topup", req)
+                                .bearerAuth(adminToken.getToken()),
+                        String.class));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertEquals(100, tokenRepository.findByLicenseNo(LICENSE_NO).orElseThrow().getBalance());
+    }
+
+    @Test
+    @DisplayName("Topup for unknown token should return 404 without echoing identifier")
+    void testTopupUnknownTokenNotFound() {
+        var req = java.util.Map.of("amount", 10);
+
+        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () ->
+                client.toBlocking().exchange(
+                        HttpRequest.POST("/admin/tokens/sk_user_unknown_value/topup", req)
+                                .bearerAuth(adminToken.getToken()),
+                        String.class));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatus());
+        assertFalse(ex.getResponse().getBody(String.class).orElse("").contains("sk_user_unknown_value"));
+    }
+
+    @Test
+    @DisplayName("Topup within the limit should increase balance")
+    void testTopupWithinLimit() {
+        var req = java.util.Map.of("amount", 50);
+
+        var resp = client.toBlocking().exchange(
+                HttpRequest.POST("/admin/tokens/" + LICENSE_NO + "/topup", req)
+                        .bearerAuth(adminToken.getToken()),
+                String.class);
+        assertEquals(HttpStatus.OK, resp.getStatus());
+        assertEquals(150, tokenRepository.findByLicenseNo(LICENSE_NO).orElseThrow().getBalance());
+    }
+
+    @Test
+    @DisplayName("Generated API keys should be unique and carry 256 bits of randomness")
+    void testApiKeyUniqueness() {
+        java.util.Set<String> keys = new java.util.HashSet<>();
+        for (int i = 0; i < 1000; i++) {
+            String key = TokenAdminController.generateApiKey(false);
+            assertEquals("sk_user_".length() + 43, key.length());
+            assertTrue(keys.add(key));
+        }
+    }
+
+    @Test
     @DisplayName("Should generate valid API key format for user")
     void testUserTokenGeneration() {
         String userKey = TokenAdminController.generateApiKey(false);

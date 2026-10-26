@@ -13,6 +13,8 @@ import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.template.PebbleTemplate;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
 import java.io.Writer;
@@ -22,6 +24,8 @@ import java.util.Map;
 @Singleton
 @Controller("/search")
 public class QuestionSearchController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(QuestionSearchController.class);
 
     @Inject
     private QuestionRepository repository;
@@ -85,7 +89,8 @@ public class QuestionSearchController {
 
             return HttpResponse.ok(writer.toString()).contentType(MediaType.TEXT_HTML);
         } catch (Exception e) {
-            throw new HttpStatusException(io.micronaut.http.HttpStatus.INTERNAL_SERVER_ERROR, "Error: " + e.getMessage());
+            LOG.error("Failed to render search page", e);
+            throw new HttpStatusException(io.micronaut.http.HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error");
         }
     }
 
