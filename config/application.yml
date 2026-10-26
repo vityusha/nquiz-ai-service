@@ -5,20 +5,6 @@ micronaut:
     port: 8080
     shutdown: grace
     max-request-size: 1MB
-  security:
-    intercept-url-map:
-      - pattern: /api/capabilities
-        access:
-          - isAnonymous()
-      - pattern: /search
-        access:
-          - isAnonymous()
-      - pattern: /search/**
-        access:
-          - isAnonymous()
-      - pattern: /webhook/**
-        access:
-          - isAnonymous()
 
 datasources:
   default:

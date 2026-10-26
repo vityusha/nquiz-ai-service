@@ -38,7 +38,11 @@ No lint or typecheck tasks exist.
 ## Notable quirks
 
 - **Dialect.H2 for SQLite:** All `@JdbcRepository` use `Dialect.H2` because Micronaut Data lacks SQLite dialect support. Keep as-is.
-- **Rate limit:** Per-IP 10 req/min bucket (`RateLimitFilter`), max 10k tracked IPs.
+- **Rate limit:** Per-IP buckets (`RateLimitFilter`), max 10k tracked IPs: `/api/**` 10 req/min, `/admin/**` 10 req/min (`app.rate-limit.admin-per-minute`).
+- **Client IP:** `X-Real-IP` / `X-Forwarded-For` are honoured only when the TCP peer is a trusted proxy (`app.trusted-proxies`, comma-separated CIDRs; default loopback + private ranges). Otherwise the socket address is used.
+- **Security headers:** `SecurityHeadersFilter` sets CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on all responses.
+- **Errors:** Unhandled exceptions are logged and returned as a generic `500 {"error":"Internal Server Error"}` (`GlobalExceptionHandler`).
+- **Top-up limit:** A single top-up (admin or webhook) is capped at 100 000 (`PaymentService.MAX_TOPUP_AMOUNT`).
 - **No HTTPS:** Terminated at reverse proxy (Nginx/Caddy). App serves HTTP on :8080.
 - **Admin bootstrap:** First run creates an admin token and prints it to stdout when no admin tokens exist.
 - **Dockerfile:** Pre-built JAR expected at `build/libs/*-all.jar` — build locally first, then `docker build -f docker/Dockerfile`.

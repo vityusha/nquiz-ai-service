@@ -76,7 +76,6 @@ class BotFilterTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "/api/capabilities",
             "/search",
             "/",
             "/health",

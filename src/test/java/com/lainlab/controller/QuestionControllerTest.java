@@ -386,16 +386,25 @@ class QuestionControllerTest {
     // ──────────────────────────────────────────────
 
     @Test
-    @DisplayName("GET /api/questions/get - should reject without Authorization header")
-    void testSearchQuestions_MissingAuth() {
-        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
-            client.toBlocking().exchange(
-                HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT"),
-                String.class
-            );
-        });
+    @DisplayName("GET /api/questions/get - should work without Authorization header")
+    void testSearchQuestions_NoAuthRequired() {
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT"),
+            String.class
+        );
 
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+        assertEquals(HttpStatus.OK, response.getStatus());
+    }
+
+    @Test
+    @DisplayName("GET /api/questions/get - should work with an invalid token")
+    void testSearchQuestions_InvalidTokenIgnored() {
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT").bearerAuth("sk_user_invalid"),
+            String.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
     }
 
     @Test
@@ -494,17 +503,15 @@ class QuestionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/questions/get - should reject with inactive token")
+    @DisplayName("GET /api/questions/get - public endpoint ignores inactive token")
     void testSearchQuestions_InactiveToken() {
-        HttpClientResponseException ex = assertThrows(HttpClientResponseException.class, () -> {
-            client.toBlocking().exchange(
-                HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT")
-                    .bearerAuth(inactiveToken.getToken()),
-                String.class
-            );
-        });
+        HttpResponse<String> response = client.toBlocking().exchange(
+            HttpRequest.GET("/api/questions/get?mode=ONE_CORRECT")
+                .bearerAuth(inactiveToken.getToken()),
+            String.class
+        );
 
-        assertEquals(HttpStatus.UNAUTHORIZED, ex.getStatus());
+        assertEquals(HttpStatus.OK, response.getStatus());
     }
 
     @Test

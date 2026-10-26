@@ -402,8 +402,9 @@ public class QuestionService {
                 "count", questions != null ? questions.size() : 0)
             );
         } catch (Exception e) {
+            LOG.error("Failed to store questions", e);
             return HttpResponse.serverError(Map.of(
-                "error", e.getMessage()
+                "error", "Failed to store questions"
             ));
         }
     }

@@ -1,5 +1,6 @@
 package com.lainlab.filter;
 
+import com.lainlab.config.ClientIpResolver;
 import io.micronaut.core.order.Ordered;
 import io.micronaut.http.annotation.ServerFilter;
 import org.junit.jupiter.api.DisplayName;
@@ -13,7 +14,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("Should have highest precedence order")
     void shouldHaveHighestPrecedence() {
-        RateLimitFilter filter = new RateLimitFilter();
+        RateLimitFilter filter = new RateLimitFilter(new ClientIpResolver(ClientIpResolver.DEFAULT_TRUSTED_PROXIES), 10);
         assertEquals(Ordered.HIGHEST_PRECEDENCE, filter.getOrder());
     }
 
@@ -22,6 +23,13 @@ class RateLimitFilterTest {
     void shouldApplyOnlyToApiPaths() {
         assertTrue(RateLimitFilter.class.getAnnotation(ServerFilter.class)
                 .value()[0].contains("/api/**"));
+    }
+
+    @Test
+    @DisplayName("Should also apply to /admin/** paths")
+    void shouldApplyToAdminPaths() {
+        assertTrue(java.util.Arrays.asList(RateLimitFilter.class.getAnnotation(ServerFilter.class).value())
+                .contains("/admin/**"));
     }
 
     @Test

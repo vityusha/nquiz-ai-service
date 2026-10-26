@@ -5,3 +5,8 @@ micronaut:
 datasources:
   default:
     url: jdbc:sqlite:build/test-db/nquiz-ai-service-test.db
+
+app:
+  rate-limit:
+    # Admin controller tests issue many requests from 127.0.0.1 within a minute
+    admin-per-minute: 1000

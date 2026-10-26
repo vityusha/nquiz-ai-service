@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
+import java.util.Set;
 
 @Singleton // Required for Micronaut 4 to register the filter bean
 @ServerFilter("/api/**")
@@ -20,13 +21,18 @@ public class TokenAuthFilter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TokenAuthFilter.class);
 
+    private static final Set<String> PUBLIC_PATHS = Set.of(
+            "/api/questions/get"
+    );
+
     @Inject
     TokenRepository tokens;
 
     @RequestFilter
     public void doFilter(HttpRequest<?> request) {
         String path = request.getUri().getPath();
-        if ("/api/capabilities".equals(path)) {
+        // Public endpoints (still rate-limited by RateLimitFilter)
+        if (PUBLIC_PATHS.contains(path)) {
             return;
         }
         String auth = request.getHeaders().get("Authorization");
