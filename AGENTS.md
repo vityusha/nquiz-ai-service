@@ -39,7 +39,10 @@ No lint or typecheck tasks exist.
 
 - **Dialect.H2 for SQLite:** All `@JdbcRepository` use `Dialect.H2` because Micronaut Data lacks SQLite dialect support. Keep as-is.
 - **Rate limit:** Per-IP buckets (`RateLimitFilter`), max 10k tracked IPs: `/api/**` 10 req/min, `/admin/**` 10 req/min (`app.rate-limit.admin-per-minute`).
-- **Client IP:** `X-Real-IP` / `X-Forwarded-For` are honoured only when the TCP peer is a trusted proxy (`app.trusted-proxies`, comma-separated CIDRs; default loopback + private ranges). Otherwise the socket address is used.
+- **Client IP:** `X-Real-IP` / `X-Forwarded-For` are honoured only when the TCP peer is a trusted proxy (`ClientIpResolver`). Otherwise the socket address is used.
+  - `app.trusted-proxies` (env `APP_TRUSTED_PROXIES`): comma-separated IPs/CIDRs, IPv4 and IPv6. Not set → default `127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7` (loopback + private ranges: proxy on the same host or Docker bridge). Empty string → trust nobody. A configured list replaces the default, it is not merged.
+  - Invalid entries are skipped with `WARN Ignoring invalid trusted proxy entry: ...` at startup — if you see it, fix the setting: with no valid entry the proxy address is used for every client and all users share one rate-limit bucket.
+  - The default lives in Java (`DEFAULT_TRUSTED_PROXIES`), not in a `${app.trusted-proxies:...}` placeholder: Micronaut splits placeholders on every `:`, so IPv6 defaults there collapse (that is how `/7` appeared). Do not move it back.
 - **Security headers:** `SecurityHeadersFilter` sets CSP, HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on all responses.
 - **Errors:** Unhandled exceptions are logged and returned as a generic `500 {"error":"Internal Server Error"}` (`GlobalExceptionHandler`).
 - **Top-up limit:** A single top-up (admin or webhook) is capped at 100 000 (`PaymentService.MAX_TOPUP_AMOUNT`).
