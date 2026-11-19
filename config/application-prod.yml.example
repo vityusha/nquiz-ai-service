@@ -7,6 +7,12 @@ micronaut:
   server:
     forwarded-header-strategy: NATIVE
 
+# Reverse proxies whose X-Real-IP / X-Forwarded-For are trusted (comma-separated IPs/CIDRs).
+# Not set -> loopback + private ranges (fits Nginx/Caddy on the same host or a Docker bridge).
+# Set it only if the proxy comes from elsewhere; the list replaces the default.
+#app:
+#  trusted-proxies: "127.0.0.0/8,::1/128,172.16.0.0/12"
+
 datasources:
   default:
     url: jdbc:sqlite:/var/lib/nquiz-ai-service/data/nquiz-ai-users.db?journal_mode=WAL
