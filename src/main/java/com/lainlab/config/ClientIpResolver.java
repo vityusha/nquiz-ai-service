@@ -1,6 +1,7 @@
 package com.lainlab.config;
 
-import io.micronaut.context.annotation.Value;
+import io.micronaut.context.annotation.Property;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpRequest;
 import jakarta.inject.Singleton;
 import org.slf4j.Logger;
@@ -27,8 +28,11 @@ public class ClientIpResolver {
 
     private final List<Cidr> trustedProxies;
 
-    public ClientIpResolver(@Value("${app.trusted-proxies:" + DEFAULT_TRUSTED_PROXIES + "}") String trustedProxies) {
-        this.trustedProxies = parse(trustedProxies);
+    // The default is applied here, not in a "${...:default}" placeholder: Micronaut splits
+    // placeholders on every ':' and the IPv6 entries would collapse the default to "/7".
+    // null (property not set) -> defaults; empty string -> trust nobody.
+    public ClientIpResolver(@Property(name = "app.trusted-proxies") @Nullable String trustedProxies) {
+        this.trustedProxies = parse(trustedProxies != null ? trustedProxies : DEFAULT_TRUSTED_PROXIES);
     }
 
     public String resolve(HttpRequest<?> request) {

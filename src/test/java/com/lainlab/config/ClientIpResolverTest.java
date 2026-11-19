@@ -66,5 +66,8 @@ class ClientIpResolverTest {
 
         ClientIpResolver none = new ClientIpResolver("");
         assertFalse(none.isTrusted("127.0.0.1"));
+
+        ClientIpResolver unset = new ClientIpResolver(null);
+        assertTrue(unset.isTrusted("fd00::1"));
     }
 }
